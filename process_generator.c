@@ -1,11 +1,22 @@
-#include "headers.h"
+#include "./Clock/headers.h"
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 void clearResources(int);
-
 int main(int argc, char * argv[])
 {
     signal(SIGINT, clearResources);
-    // TODO Initialization
+    FILE *file;
+    char line[256];
+    int id, arrivaltime, runningtime, priority;
+    // TODO: Initialization
     // 1. Read the input files.
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
     // 3. Initiate and create the scheduler and clock processes.
@@ -14,7 +25,7 @@ int main(int argc, char * argv[])
     // To get time use this
     int x = getClk();
     printf("current time is %d\n", x);
-    // TODO Generation Main Loop
+    // TODO: Generation Main Loop
     // 5. Create a data structure for processes and provide it with its parameters.
     // 6. Send the information to the scheduler at the appropriate time.
     // 7. Clear clock resources
@@ -23,5 +34,5 @@ int main(int argc, char * argv[])
 
 void clearResources(int signum)
 {
-    //TODO Clears all resources in case of interruption
+    // TODO: Clears all resources in case of interruption
 }
