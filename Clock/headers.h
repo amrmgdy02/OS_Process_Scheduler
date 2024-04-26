@@ -18,6 +18,19 @@ typedef short bool;
 #define SHKEY 300
 
 
+typedef struct process
+{
+    int arrivaltime;
+    int priority;
+    int runningtime;
+    int remainingtime;
+    int id;
+} process;
+
+
+
+
+
 ///==============================
 //don't mess with this variable//
 int * shmaddr;                 //
