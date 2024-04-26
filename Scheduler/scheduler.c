@@ -60,7 +60,7 @@ process* createProcess(int processID, int priority, int arrivaltime, int running
 int main(int argc, char * argv[])
 {
     initClk();
-    
+    getClk();
     //TODO implement the scheduler :)
     //upon termination release the clock resources.
 

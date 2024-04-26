@@ -1,4 +1,4 @@
-#include <stdio.h>      //if you don't use scanf/printf change this include
+#include <stdio.h> //if you don't use scanf/printf change this include
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/file.h>
@@ -32,35 +32,39 @@ typedef struct process
 
 
 ///==============================
-//don't mess with this variable//
-int * shmaddr;                 //
+// don't mess with this variable//
+int *shmaddr; //
 //===============================
-
-
 
 int getClk()
 {
     return *shmaddr;
 }
 
-
 /*
  * All process call this function at the beginning to establish communication between them and the clock module.
  * Again, remember that the clock is only emulation!
-*/
+ */
 void initClk()
 {
-    int shmid = shmget(SHKEY, 4, 0444);
+    int shmid = shmget(SHKEY, 4, 0666 | IPC_CREAT);
     while ((int)shmid == -1)
     {
-        //Make sure that the clock exists
+        // Make sure that the clock exists
         printf("Wait! The clock not initialized yet!\n");
         sleep(1);
-        shmid = shmget(SHKEY, 4, 0444);
+        shmid = shmget(SHKEY, 4, 0666);
     }
-    shmaddr = (int *) shmat(shmid, (void *)0, 0);
-}
+    shmaddr = (int *)shmat(shmid, (void *)0, 0);
+    if (shmaddr == (void *)-1)
+    {
+        perror("shmat failed");
+        exit(EXIT_FAILURE);
+    }
 
+    // Print a message to indicate successful initialization
+    printf("Clock initialized.\n");
+}
 
 /*
  * All process call this function at the end to release the communication
@@ -68,7 +72,7 @@ void initClk()
  * Again, Remember that the clock is only emulation!
  * Input: terminateAll: a flag to indicate whether that this is the end of simulation.
  *                      It terminates the whole system and releases resources.
-*/
+ */
 
 void destroyClk(bool terminateAll)
 {
