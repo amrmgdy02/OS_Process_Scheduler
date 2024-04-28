@@ -28,6 +28,29 @@ typedef struct process
 } process;
 
 
+// Function to create a new process node
+process* createProcess(int processID, int priority, int arrivaltime, int runningtime) {
+    process *newProcess = (process*)malloc(sizeof(process));
+    if (newProcess == NULL) {
+        printf("Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+    newProcess->id = processID;
+    newProcess->priority = priority;
+    newProcess->arrivaltime = arrivaltime;
+    newProcess->runningtime = runningtime;
+    newProcess->remainingtime = runningtime;
+
+    return newProcess;
+}
+
+
+struct msgbuff
+{
+    long mtype;
+    process arrivedProcess;
+};
+
 
 
 

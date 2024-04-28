@@ -1,22 +1,22 @@
 #include "../Clock/headers.h"
 
 
-struct PQnode;
-typedef struct PQnode* PQnodePtr;
+struct QueueNode;
+typedef struct QueueNode* QueueNodePtr;
 
-typedef struct PQnode {
+typedef struct QueueNode {
     process* nodeProcess;
-    PQnodePtr next;
-} PQnode;
+    QueueNodePtr next;
+} QueueNode;
 
 
-typedef struct PriorityQueue {
-    PQnode* front;
-} PriorityQueue;
+typedef struct Queue {
+    QueueNode* front;
+} Queue;
 
 
-PriorityQueue* createPriorityQueue() {
-    PriorityQueue* pq = (PriorityQueue*)malloc(sizeof(PriorityQueue));
+Queue* createQueue() {
+    Queue* pq = (Queue*)malloc(sizeof(Queue));
     if (pq == NULL) {
         printf("Memory allocation failed\n");
         exit(EXIT_FAILURE);
@@ -25,22 +25,27 @@ PriorityQueue* createPriorityQueue() {
     return pq;
 }
 
+int isEmpty (Queue* q) {
+    if (q->front == NULL)
+        return 1;
+    return 0;
+}
 
-void enqueue(PriorityQueue* pq, process* newprocess, int priority) {
-    // Create a new PQnode
-    PQnode* newNode = (PQnode*)malloc(sizeof(PQnode));
+void normalQenqueue(Queue* pq, process* newprocess) {
+    // Create a new QueueNode
+    QueueNode* newNode = (QueueNode*)malloc(sizeof(QueueNode));
     if (newNode == NULL) {
         printf("Memory allocation failed\n");
         exit(EXIT_FAILURE);
     }
     newNode->nodeProcess = newprocess;
 
-    if (pq->front == NULL || priority < pq->front->nodeProcess->priority) {
+    if (pq->front == NULL) {
         newNode->next = pq->front;
         pq->front = newNode;
     } else {
-        PQnode* current = pq->front;
-        while (current->next != NULL && current->next->nodeProcess->priority <= priority) {
+        QueueNode* current = pq->front;
+        while (current->next != NULL) {
             current = current->next;
         }
         newNode->next = current->next;
@@ -49,45 +54,46 @@ void enqueue(PriorityQueue* pq, process* newprocess, int priority) {
 }
 
 
-process* dequeue(PriorityQueue* pq) {
+process* dequeue(Queue* pq) {
     if (pq->front == NULL) {
-        printf("Queue is empty\n");
+       // printf("Queue is empty\n");
         return NULL;
     }
-    PQnode* temp = pq->front;
+    QueueNode* temp = pq->front;
     pq->front = pq->front->next;
     process* dequeuedProcess = temp->nodeProcess;
+    temp = NULL;
     free(temp);
     return dequeuedProcess;
 }
 
 
-process* peek(PriorityQueue* pq) {
+process* peek(Queue* pq) {
     if (pq->front == NULL) {
-        printf("Queue is empty\n");
+      //  printf("Queue is empty\n");
         return NULL;
     }
     return pq->front->nodeProcess;
 }
 
 
-void display(PriorityQueue* pq) {
-    PQnode* current = pq->front;
+void display(Queue* pq) {
+    QueueNode* current = pq->front;
     if (current == NULL) {
         printf("Queue is empty\n");
         return;
     }
-    printf("Priority Queue:\n");
+    printf("\nQueue:\n");
     while (current != NULL) {
-        printf("Process ID: %d, Priority: %d\n", current->nodeProcess->id, current->nodeProcess->priority);
+        printf("Process ID: %d\n", current->nodeProcess->id);
         current = current->next;
     }
 }
 
 // Function to free the memory allocated for the priority queue
-void freePriorityQueue(PriorityQueue* pq) {
-    PQnode* current = pq->front;
-    PQnode* next;
+void freeQueue(Queue* pq) {
+    QueueNode* current = pq->front;
+    QueueNode* next;
     while (current != NULL) {
         next = current->next;
         free(current);
