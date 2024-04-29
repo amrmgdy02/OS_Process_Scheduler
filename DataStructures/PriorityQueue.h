@@ -25,6 +25,11 @@ PriorityQueue* createPriorityQueue() {
     return pq;
 }
 
+int PQisEmpty (PriorityQueue* pq) {
+    if (pq->front == NULL)
+        return 1;
+    return 0;
+}
 
 
 void PQenqueue(PriorityQueue* pq, process* newprocess, int priority) {

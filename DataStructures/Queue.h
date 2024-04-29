@@ -77,8 +77,8 @@ process* peek(Queue* pq) {
 }
 
 
-void display(Queue* pq) {
-    QueueNode* current = pq->front;
+void display(Queue* q) {
+    QueueNode* current = q->front;
     if (current == NULL) {
         printf("Queue is empty\n");
         return;

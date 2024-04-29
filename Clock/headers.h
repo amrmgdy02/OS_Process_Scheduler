@@ -16,7 +16,9 @@ typedef short bool;
 #define false 0
 
 #define SHKEY 300
-
+//////////////
+#define GEN_SCH_SHmKEY 400
+/////////////
 
 typedef struct process
 {

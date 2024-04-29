@@ -2,17 +2,6 @@
 
 
 
-PriorityQueue* PQ;
-
-
-
-
-
-// void initializeSRTN (){
-
-//     PQ = createPriorityQueue();
-
-// }
 
 
 
@@ -40,60 +29,121 @@ PriorityQueue* PQ;
 //     }
 
 // }
-key_t SCH_key_id;
-int SCH_rec_val, SCH_msgq_id;
 
+PriorityQueue* PQ;
+Queue* Q;
+
+int algorithm;
+
+key_t sch_key_id;
+int sch_rec_val, sch_msgq_id;
 struct msgbuff SCH_message;
 
+
+/////// FUNCTIONS ////////
+
+int forkNewProcess ();
+void getAlgorithm ();
+void connectWithGenerator ();
+void addProcess ();
 void recivehandler (int signum);
 
 
 int main(int argc, char * argv[])
 {
-   // initClk();
-   // getClk();
+    initClk();
+    algorithm = atoi(argv[1]);
+
+    connectWithGenerator();
+    getAlgorithm();
+    
     //TODO implement the scheduler :)
-    
-    PQ = createPriorityQueue();
-    signal (SIGUSR1, recivehandler);
-     
 
-    SCH_key_id = ftok("keyfile", 65);               //create unique key
-    SCH_msgq_id = msgget(10000, 0666 | IPC_CREAT); //create message queue and return id
-
-    if (SCH_msgq_id == -1)
+    while (true)
     {
-        perror("Error in create");
-        exit(-1);
+    sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
+    if (sch_rec_val == -1)
+        perror("Error in receive");
+    else 
+    { 
+        addProcess ();
     }
-    printf("Message Queue ID = %d\n", SCH_msgq_id);
-
-    
-    while (true);
-
-    //upon termination release the clock resources.
-   
-  //  destroyClk(true);
+    }
     return 0;
 }
 
-void recivehandler (int signum) {
-
-    printf("I entered'n");
-    SCH_rec_val = msgrcv(SCH_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), 0, !IPC_NOWAIT);
-     if (SCH_rec_val == -1)
-             perror("Error in receive");
-         else {
-                process * newprocess = createProcess(SCH_message.arrivedProcess.id, SCH_message.arrivedProcess.priority,
-                 SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.arrivaltime);
-            
-               // printf("\nReceived process id: %d\n", newprocess->id);
-                PQenqueue(PQ, newprocess, newprocess->priority);
-             }
-             
-    printf("Priority queue now is: \n");    
-    PQdisplay(PQ);
-   
-    signal (SIGUSR1, recivehandler);
+int forkNewProcess ()
+{
+  int id = fork();
+  if (id == -1)
+  {
+	   	perror("error in fork");
+      exit(-1);
+  }
+  else if (id == 0)
+  {
+      if (execl("./process.out","process.out", NULL) == -1)
+      {
+          perror("execl: ");
+          exit(1);
+      }
+  }
+     return id;
 }
 
+///////////////////////////////////////////
+
+void getAlgorithm()
+{
+  switch (algorithm) 
+    {
+      case 1:
+          printf ("You are in HPF mode\n");
+          PQ = createPriorityQueue();
+          break;
+      case 2:
+          printf ("You are in SRTN mode\n");
+          PQ = createPriorityQueue();
+          break;
+      case 3:
+          printf ("You are in RR mode\n");
+          Q = createQueue();
+          break;
+    }
+}
+
+///////////////////////////////////////////
+
+void connectWithGenerator ()
+{
+  sch_key_id = ftok("keyfile", 65);
+  sch_msgq_id = msgget(sch_key_id, 0666 | IPC_CREAT);
+  if (sch_msgq_id == -1)
+  {
+     perror("Error in create");
+     exit(-1);
+  }
+}
+
+////////////////////////////////////////////
+
+void addProcess ()
+{
+    process * newprocess = createProcess(SCH_message.arrivedProcess.id, SCH_message.arrivedProcess.priority,
+    SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.arrivaltime);
+    int pid = forkNewProcess(); // create a real process
+    newprocess->id = pid; // set the real id of the forked process
+    switch (algorithm)
+    {
+        case 3:
+          normalQenqueue(Q, newprocess);
+        //  printf("Queue now is: \n");    
+        //  display(Q);
+          break;
+        default:
+          PQenqueue(PQ, newprocess, newprocess->priority);
+        //  printf("Priority queue now is: \n");    
+        //  PQdisplay(PQ);
+          break;
+        }
+}

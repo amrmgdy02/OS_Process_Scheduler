@@ -17,9 +17,12 @@ struct msgbuff processmsg;
 
 
 void setProcessParameters (int id,int arr, int runningtime, int pri);
+int createClockProcess ();
+int createSchedulerProcess ();
 
 int msgq_id;
-
+char algo[2]; // string to be sent to shceduler as argument
+char processesCount[2]; 
 
 void clearResources(int);
 int main(int argc, char *argv[])
@@ -29,6 +32,7 @@ int main(int argc, char *argv[])
 
     FILE *file;
     char line[256];
+    int processesNumber = 0;
     int id, arrivalTime, runningTime, priority;
 
     processmsg.mtype = 7; /* arbitrary value */
@@ -55,7 +59,10 @@ int main(int argc, char *argv[])
         arrivedProcess = createProcess(id, priority, arrivalTime,runningTime);
         normalQenqueue(processesQueue, arrivedProcess);
         printf("Process ID: %d, Arrival Time: %d, Running Time: %d, Priority: %d\n", id, arrivalTime, runningTime, priority);
+        processesNumber++;
     }
+    sprintf (processesCount, "%d", processesNumber);
+
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
     int algorithm;
     int RR;
@@ -82,6 +89,8 @@ int main(int argc, char *argv[])
     }
 
     printf("Chosen algorithm: %d\n", algorithm);
+    sprintf (algo, "%d", algorithm);
+   
     // 3. Initiate and create the scheduler and clock processes.
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -90,44 +99,23 @@ int main(int argc, char *argv[])
     int send_val;
 
     key_id = ftok("keyfile", 65);
-    msgq_id = msgget(10000, 0666 | IPC_CREAT);
+    msgq_id = msgget(key_id, 0666 | IPC_CREAT);
     if (msgq_id == -1)
     {
         perror("Error in create");
         exit(-1);
     }
-    printf("Message Queue ID = %d\n", msgq_id);
 
 
 ///////////////////////////////////////////////////////////////////////////
-    //  int schedulerID = fork();
-    //  if (schedulerID == -1) {
-	//  	perror("error in fork");
-    //  }
-    //  else if (schedulerID == 0) {
-    //      if (execl("bin/scheduler.out","scheduler.out", NULL) == -1) {
-    //          perror("execl: ");
-    //          exit(1);
-    //      }
-    //  }
-
-    // int clckID = fork();
-    // if (clckID == -1) {
-	// 	perror("error in fork");
-    // }
-
-    // else if (clckID == 0) {
-    //     if (execl("bin/clk.out","bin/clk.out", NULL) == -1) {
-
-    //         perror("execl: ");
-    //         exit(1);
-
-    //     }
-    // }
+   
+    int clckID = createClockProcess();
+    int schedulerID = createSchedulerProcess();
+   // printf("Scheduler id is: %d\n", schedulerID);
     
 ////////////////////////////////////////////////////////////////////////////////////////
 
-
+ //   display(processesQueue);
 
     // 4. Use this function after creating the clock process to initialize clock
     initClk();
@@ -145,21 +133,21 @@ int main(int argc, char *argv[])
     while (!isEmpty(processesQueue)) 
     {
         int currtime = getClk();
-        if (currtime >= currp->arrivaltime) {
+        if (currtime >= currp->arrivaltime)
+        {
         process * temp = dequeue(processesQueue);
         currp = peek(processesQueue);
-        
-        setProcessParameters(temp->id, temp->arrivaltime, temp->runningtime, temp->priority);
-                
-        kill (27619, SIGUSR1);  // id should be dynamic
+        setProcessParameters(temp->id, temp->arrivaltime, temp->runningtime, temp->priority);   
+        processmsg.mtype = schedulerID;
         send_val = msgsnd(msgq_id, &processmsg, sizeof(processmsg.arrivedProcess), !IPC_NOWAIT); 
-
+     //   kill (schedulerID, SIGUSR1);  
+        
         if (send_val == -1) 
         {
             perror ("sending error: ");
         }
-        else
-            printf("sent procees id: %d\n", processmsg.arrivedProcess.id);
+      //  else
+        //    printf("procees with priority: %d sent on queue\n", processmsg.arrivedProcess.priority);
         }
     }
 
@@ -171,18 +159,23 @@ int main(int argc, char *argv[])
     // 6. Send the information to the scheduler at the appropriate time.
     // 7. Clear clock resources
 
+    sleep(10);
     destroyClk(true);
-
+    kill(getpgrp(), SIGTERM);
+    
     msgctl(msgq_id, IPC_RMID, (struct msqid_ds *)0);
 
+  
+ 
     fclose(file);
     return 0;
 }
 
 void clearResources(int signum)
 {
-
+    destroyClk(true);
     msgctl(msgq_id, IPC_RMID, (struct msqid_ds *)0);
+    kill(getpgrp(), SIGTERM);
     // TODO: Clears all resources in case of interruption
 }
 
@@ -193,4 +186,44 @@ void setProcessParameters (int id,int arr, int runningtime, int pri) {
     processmsg.arrivedProcess.priority = pri;
     processmsg.arrivedProcess.runningtime = runningtime; 
     processmsg.arrivedProcess.remainingtime = runningtime;
+}
+
+
+int createClockProcess () {
+
+    int clckID = fork();
+    if (clckID == -1)
+    {
+		perror("error in fork");
+        exit(-1);
+    }
+    else if (clckID == 0)
+    {
+        if (execl("./clk.out","bin/clk.out", NULL) == -1)
+        {
+            perror("execl: ");
+            exit(1);
+        }
+    }
+    return clckID;
+}
+
+
+int createSchedulerProcess () {
+
+    int schedulerID = fork();
+    if (schedulerID == -1)
+    {
+	 	perror("error in fork");
+        exit(-1);
+    }
+    else if (schedulerID == 0)
+    {
+        if (execl("./scheduler.out","scheduler.out", algo, NULL) == -1)
+        {
+             perror("execl: ");
+             exit(1);
+        }
+     }
+     return schedulerID;
 }
