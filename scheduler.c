@@ -69,6 +69,7 @@ int main(int argc, char * argv[])
         addProcess ();
     }
     }
+    destroyClk(true);
     return 0;
 }
 
