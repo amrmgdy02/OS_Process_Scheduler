@@ -89,9 +89,10 @@ int forkNewProcess (char* runnungtime, char* arrivaltime)
           exit(1);
       }
   }
-  /////**********************///////////
-  kill(SIGTSTP, id); // stop the forked process untill its turn
+
   /////*********************///////////
+  kill (id, SIGSTOP); // stop the forked process untill its turn
+
   return id;
 }
 
@@ -159,4 +160,5 @@ void addProcess ()
         //  PQdisplay(PQ);
           break;
         }
+   // kill (pid, SIGCONT); // stop the forked process untill its turn
 }

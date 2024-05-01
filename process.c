@@ -3,9 +3,13 @@
 /* Modify this file as needed*/
 int remainingtime;
 
+void handler (int signum);
+
+
 int main(int agrc, char * argv[])
 {
     initClk();
+   // signal(SIGSTOP, handler);
     int runningtime = atoi(argv[1]);
     int arrivaltime = atoi(argv[2]);
     
@@ -22,3 +26,9 @@ int main(int agrc, char * argv[])
     
     return 0;
 }
+
+// void handler (int signum)
+// {
+//   printf("I RECIEVED A STOP SIGNAL\n");
+//   raise(SIGSTOP);
+// }
