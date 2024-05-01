@@ -42,7 +42,7 @@ struct msgbuff SCH_message;
 
 /////// FUNCTIONS ////////
 
-int forkNewProcess ();
+int forkNewProcess (char* runtime, char* arrivaltime);
 void getAlgorithm ();
 void connectWithGenerator ();
 void addProcess ();
@@ -73,7 +73,7 @@ int main(int argc, char * argv[])
     return 0;
 }
 
-int forkNewProcess ()
+int forkNewProcess (char* runnungtime, char* arrivaltime)
 {
   int id = fork();
   if (id == -1)
@@ -83,13 +83,16 @@ int forkNewProcess ()
   }
   else if (id == 0)
   {
-      if (execl("./process.out","process.out", NULL) == -1)
+      if (execl("./process.out","process.out", runnungtime, arrivaltime, NULL) == -1)
       {
           perror("execl: ");
           exit(1);
       }
   }
-     return id;
+  /////**********************///////////
+  kill(SIGTSTP, id); // stop the forked process untill its turn
+  /////*********************///////////
+  return id;
 }
 
 ///////////////////////////////////////////
@@ -131,10 +134,18 @@ void connectWithGenerator ()
 void addProcess ()
 {
     process * newprocess = createProcess(SCH_message.arrivedProcess.id, SCH_message.arrivedProcess.priority,
-    SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.arrivaltime);
-    int pid = forkNewProcess(); // create a real process
+    SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.runningtime);
+
+    char runnungtimearg[20]; // a string containing the raunnumg time to be sent as argument to the forked process
+    sprintf(runnungtimearg, "%d", newprocess->runningtime);
+
+    char arrivaltime[20]; // same for arrival time (msh 3aref hn7tagha wla la)
+    sprintf(arrivaltime, "%d", newprocess->arrivaltime);
+
+    int pid = forkNewProcess(runnungtimearg, arrivaltime); // create a real process
     newprocess->realPid = pid; // set the real id of the forked process
-    printf("process with id: %d forked with realpid: %d\n", newprocess->id, newprocess->realPid);
+
+    printf("process with id: %d forked\n", newprocess->id);
     switch (algorithm)
     {
         case 3:
