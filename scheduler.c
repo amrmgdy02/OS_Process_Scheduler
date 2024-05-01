@@ -133,7 +133,8 @@ void addProcess ()
     process * newprocess = createProcess(SCH_message.arrivedProcess.id, SCH_message.arrivedProcess.priority,
     SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.arrivaltime);
     int pid = forkNewProcess(); // create a real process
-    newprocess->id = pid; // set the real id of the forked process
+    newprocess->realPid = pid; // set the real id of the forked process
+    printf("process with id: %d forked with realpid: %d\n", newprocess->id, newprocess->realPid);
     switch (algorithm)
     {
         case 3:

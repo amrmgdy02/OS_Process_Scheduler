@@ -27,6 +27,7 @@ typedef struct process
     int runningtime;
     int remainingtime;
     int id;
+    int realPid;
 } process;
 
 
@@ -41,7 +42,8 @@ process* createProcess(int processID, int priority, int arrivaltime, int running
     newProcess->priority = priority;
     newProcess->arrivaltime = arrivaltime;
     newProcess->runningtime = runningtime;
-    newProcess->remainingtime = runningtime;
+    newProcess->remainingtime = runningtime; // id got from input and will be printed in output.  ex: 1,2,3,..
+    newProcess->realPid = 0;  // pid for scheduler to send signals to processes if needed 
 
     return newProcess;
 }
