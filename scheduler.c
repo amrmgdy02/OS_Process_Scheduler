@@ -51,6 +51,9 @@
 PriorityQueue *PQ;
 Queue *Q;
 
+// set to zero when it receives a termination signal from a process
+int flag = 1;
+
 int algorithm;
 
 key_t sch_key_id;
@@ -64,11 +67,15 @@ int forkNewProcess(char *runtime, char *arrivaltime);
 void getAlgorithm();
 void connectWithGenerator();
 void addProcess();
-void recivehandler(int signum);
+// void recivehandler(int signum); ?? What is that
+void RRScheduler(int quantum);
+void processTerminated(int signum);
 
 int main(int argc, char *argv[])
 {
   initClk();
+  // This handler to handle the termination of the processes in RR
+  signal(SIGUSR1, processTerminated);
   algorithm = atoi(argv[1]);
 
   connectWithGenerator();
@@ -178,4 +185,48 @@ void addProcess()
     break;
   }
   // kill (pid, SIGCONT); // stop the forked process untill its turn
+}
+
+///////////////////////////////////////////
+
+void RRScheduler(int quantum)
+{
+  // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
+
+  runningProcess = normalQdequeue(Q);
+
+  int reamingtime = runningProcess->runningtime;
+
+  while (!isEmpty(Q))
+  {
+
+    int runtime = min(quantum, reamingtime);
+
+    kill(runningProcess->realPid, SIGCONT);
+    sleep(runtime);
+
+    if (flag)
+    {
+      kill(runningProcess->realPid, SIGSTOP);
+      normalQenqueue(Q, runningProcess);
+    }
+    else
+    {
+      free(runningProcess);
+      flag = 1;
+    }
+
+  }
+
+}
+
+///////////////////////////////////////////
+
+void processTerminated(int signum)
+{
+  // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
+  // the scheduler should remove the process from the queue and free its memory
+
+  flag = 0;
+  
 }

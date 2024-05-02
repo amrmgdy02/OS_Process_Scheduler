@@ -18,6 +18,9 @@ int main(int agrc, char * argv[])
     // while (remainingtime > 0)
     // {
     //     // remainingtime = ??;
+    //    // remainingtime--;
+    // if (remainingtime == 0)
+    //    kill(getppid(),SIGUSR1);
     // }
    
     printf("I am process with pid = %d -- My running time is: %d -- my arrival time is: %d\n current time = %d\n",getpid(), runningtime, arrivaltime, getClk());
