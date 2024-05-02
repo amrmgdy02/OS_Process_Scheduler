@@ -36,6 +36,9 @@ void STRN();
 void STRNaddprocess();
 
 
+void HPF();
+void HPFaddprocess();
+
 int main(int argc, char *argv[])
 {
   initClk();
@@ -116,8 +119,8 @@ void STRNaddprocess()
     currentrunning = PQpeek(PQ);
     if (currentrunning == runningProcess)
     {
-    currentrunning->remainingtime = currentrunning->remainingtime - (getClk()-currentrunning->lastRunningClk);
-    currentrunning->lastRunningClk = getClk();
+      currentrunning->remainingtime = currentrunning->remainingtime - (getClk()-currentrunning->lastRunningClk);
+      currentrunning->lastRunningClk = getClk();
     }
    // printf("Current running id : %d - remaining time = %d\n",currentrunning->id, currentrunning->remainingtime);
    // printf("new running id : %d - remaining time = %d\n",newprocess->id, newprocess->remainingtime);
@@ -127,8 +130,8 @@ void STRNaddprocess()
         kill (currentrunning->realPid, SIGTSTP);
         if (currentrunning == runningProcess)
         {
-        currentrunning->remainingtime = currentrunning->remainingtime - (getClk()-currentrunning->lastRunningClk);
-        currentrunning->lastRunningClk = getClk();
+          currentrunning->remainingtime = currentrunning->remainingtime - (getClk()-currentrunning->lastRunningClk);
+          currentrunning->lastRunningClk = getClk();
         }
       //  printf("NOW the remaining time of ID = %d is %d\n", currentrunning->id, currentrunning->remainingtime);
         kill (newprocess->realPid, SIGCONT);
@@ -144,8 +147,61 @@ void STRNaddprocess()
       runningProcess->lastRunningClk = getClk();
   }
   STRNenqueue(PQ, newprocess, newprocess->remainingtime);
-
 }
+
+
+void HPF()
+{
+  PQ = createPriorityQueue();
+  while (processCount > 0)
+  {
+      sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
+      if (sch_rec_val != -1)
+      {
+        HPFaddprocess();
+      //    printf("RECIEVED A PROCESS\n");
+      }
+      if(!PQisEmpty(PQ) && runningProcess == NULL)
+      {
+        runningProcess = PQdequeue(PQ);
+       // printf("Continue ID = %d Starting from time = %d\n\n", runningProcess->id, getClk());
+        runningProcess->lastRunningClk = getClk();
+        kill(runningProcess->realPid, SIGCONT);
+      }
+      }
+ // printf("Finish time = %d\n", getClk());
+  free(PQ);
+}
+
+
+void HPFaddprocess()
+{
+  process *newprocess = createProcess(SCH_message.arrivedProcess.id, SCH_message.arrivedProcess.priority,
+  SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.runningtime);
+
+  char runnungtimearg[20]; // a string containing the raunnumg time to be sent as argument to the forked process
+  sprintf(runnungtimearg, "%d", newprocess->runningtime);
+
+  char arrivaltime[20]; // same for arrival time (msh 3aref hn7tagha wla la)
+  sprintf(arrivaltime, "%d", newprocess->arrivaltime);
+ 
+  int pid = forkNewProcess(runnungtimearg, arrivaltime, newprocess->runningtime); // create a real process
+  newprocess->realPid = pid;                             // set the real id of the forked process
+ // printf("RECIEVED ID = %d\n", newprocess->id);
+ if(runningProcess == NULL)
+ {
+ // printf("JHHHHHH\n");
+  kill(newprocess->realPid, SIGCONT);
+  runningProcess = newprocess;
+ }
+ else
+ {
+  HPFenqueue(PQ, newprocess, newprocess->priority); // if it will not run directly then put it in the ready queue
+ }
+  PQdisplay(PQ);
+}
+
+
 
 int forkNewProcess(char *runnungtime, char *arrivaltime, int run)
 {
@@ -176,18 +232,19 @@ void getAlgorithm()
   switch (algorithm)
   {
   case 1:
-    printf("You are in HPF mode\n");
-    PQ = createPriorityQueue();
-    break;
-    case 2:
+        printf("You are in HPF mode\n");
+      // PQ = createPriorityQueue();
+        HPF();
+        break;
+  case 2:
         printf ("You are in SRTN mode\n");
-       // PQ = createPriorityQueue();
+        PQ = createPriorityQueue();
         STRN();
-    break;
+        break;
   case 3:
-    printf("You are in RR mode\n");
-    Q = createQueue();
-    break;
+        printf("You are in RR mode\n");
+        Q = createQueue();
+        break;
   }
 }
 
@@ -274,10 +331,11 @@ void finishedPhandler(int signum)
 {
   process *finishedprocess = NULL;
 
-if (algorithm == 1 || algorithm == 2)
+if (algorithm == 2)
 {
   finishedprocess = PQdequeue(PQ);
   runningProcess = NULL;
+  printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
   // sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), IPC_NOWAIT);
   // if (sch_rec_val != -1)
   //    addProcess ();
@@ -287,13 +345,18 @@ if (algorithm == 1 || algorithm == 2)
   //    kill (PQpeek(PQ)->realPid, SIGCONT); // start executing the next process
   // }
 } 
-else
+else if (algorithm == 1)
 {
-  finishedprocess = dequeue(Q);
-  if (!isEmpty(Q))
-    kill (peek(Q)->realPid, SIGCONT); // start executing the next process
+ finishedprocess = runningProcess;
+ runningProcess = NULL;
+ printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
 }
-printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->realPid, getClk());
+else {
+  finishedprocess = dequeue(Q);
+  // if (!isEmpty(Q))
+  //   kill (peek(Q)->realPid, SIGCONT); // start executing the next process
+}
+
 
 free(finishedprocess);
 processCount--;
