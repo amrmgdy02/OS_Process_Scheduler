@@ -1,10 +1,5 @@
 #include "DataStructures/PriorityQueue.h"
 
-
-
-
-
-
 // void SRTN () {
 
 //     int prevtime = getClk();
@@ -18,12 +13,12 @@
 
 //             prevtime = getClk();
 //             runningProcess->remainingtime -= diff;
-            
+
 //             if (runningProcess->remainingtime == 0){
-                
+
 //                 process* finished = dequeue(PQ);
 //                 free(finished);
-//             } 
+//             }
 //         }
 
 //     }
@@ -40,7 +35,7 @@ int algorithm;
 key_t sch_key_id;
 int sch_rec_val, sch_msgq_id;
 struct msgbuff SCH_message;
-
+process *runningProcess = NULL;
 
 /////// FUNCTIONS ////////
 
@@ -52,7 +47,7 @@ void finishedPhandler(int signum);
 void sigtermhandler(int signum);
 
 
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
     initClk();
 
@@ -76,21 +71,21 @@ int main(int argc, char * argv[])
     return 0;
 }
 
-int forkNewProcess (char* runnungtime, char* arrivaltime)
+int forkNewProcess(char *runnungtime, char *arrivaltime)
 {
   int id = fork();
   if (id == -1)
   {
-	   	perror("error in fork");
-      exit(-1);
+    perror("error in fork");
+    exit(-1);
   }
   else if (id == 0)
   {
-      if (execl("./process.out","process.out", runnungtime, arrivaltime, NULL) == -1)
-      {
-          perror("execl: ");
-          exit(1);
-      }
+    if (execl("./process.out", "process.out", runnungtime, arrivaltime, NULL) == -1)
+    {
+      perror("execl: ");
+      exit(1);
+    }
   }
 
   if (((algorithm == 1 || algorithm == 2) && !PQisEmpty(PQ)) || (algorithm == 3 && !isEmpty(Q)))
@@ -124,32 +119,32 @@ void getAlgorithm()
 
 ///////////////////////////////////////////
 
-void connectWithGenerator ()
+void connectWithGenerator()
 {
   sch_key_id = ftok("keyfile", 65);
   sch_msgq_id = msgget(sch_key_id, 0666 | IPC_CREAT);
   if (sch_msgq_id == -1)
   {
-     perror("Error in create");
-     exit(-1);
+    perror("Error in create");
+    exit(-1);
   }
 }
 
 ////////////////////////////////////////////
 
-void addProcess ()
+void addProcess()
 {
-    process * newprocess = createProcess(SCH_message.arrivedProcess.id, SCH_message.arrivedProcess.priority,
-    SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.runningtime);
+  process *newprocess = createProcess(SCH_message.arrivedProcess.id, SCH_message.arrivedProcess.priority,
+                                      SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.runningtime);
 
-    char runnungtimearg[20]; // a string containing the raunnumg time to be sent as argument to the forked process
-    sprintf(runnungtimearg, "%d", newprocess->runningtime);
+  char runnungtimearg[20]; // a string containing the raunnumg time to be sent as argument to the forked process
+  sprintf(runnungtimearg, "%d", newprocess->runningtime);
 
-    char arrivaltime[20]; // same for arrival time (msh 3aref hn7tagha wla la)
-    sprintf(arrivaltime, "%d", newprocess->arrivaltime);
+  char arrivaltime[20]; // same for arrival time (msh 3aref hn7tagha wla la)
+  sprintf(arrivaltime, "%d", newprocess->arrivaltime);
 
-    int pid = forkNewProcess(runnungtimearg, arrivaltime); // create a real process
-    newprocess->realPid = pid; // set the real id of the forked process
+  int pid = forkNewProcess(runnungtimearg, arrivaltime); // create a real process
+  newprocess->realPid = pid;                             // set the real id of the forked process
 
     process * currentrunning = NULL;
 
