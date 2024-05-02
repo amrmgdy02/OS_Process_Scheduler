@@ -26,6 +26,9 @@ int main(int agrc, char * argv[])
           prev = getClk();
           remainingtime --;  
         }
+        if (remainingtime == 0)
+           kill(getppid(),SIGUSR1);
+        }
      }
    
     printf("\nProcess with pid = %d - Finish time = %d\n",getpid(), getClk());
@@ -36,6 +39,7 @@ int main(int agrc, char * argv[])
     return 0;
 }
 
+// I need to know why is that necessary?
 void SIGCONThandler(int signum)
 {
   int prev = getClk();
