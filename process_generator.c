@@ -178,7 +178,6 @@ void clearResources(int signum)
     // TODO: Clears all resources in case of interruption
 }
 
-
 void setProcessParameters (int id,int arr, int runningtime, int pri) {
     processmsg.arrivedProcess.id = id;
     processmsg.arrivedProcess.arrivaltime = arr;
@@ -187,9 +186,7 @@ void setProcessParameters (int id,int arr, int runningtime, int pri) {
     processmsg.arrivedProcess.remainingtime = runningtime;
 }
 
-
 int createClockProcess () {
-
     int clckID = fork();
     if (clckID == -1)
     {

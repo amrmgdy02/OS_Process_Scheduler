@@ -1,34 +1,31 @@
 #include "Clock/headers.h"
 
+
+
 /* Modify this file as needed*/
+int turn_shmid; // to know if its their turn
+int *turn_shmaddr;
 int remainingtime;
 
 void SIGCONThandler (int signum);
-
+void waiting();
 
 int main(int agrc, char * argv[])
 {
     initClk();
+
     signal(SIGCONT, SIGCONThandler);
     int runningtime = atoi(argv[1]);
     int arrivaltime = atoi(argv[2]);
-    printf("Process with pid = %d - Run time = %d - Arrival = %d\n Start = %d\n",getpid(), runningtime, arrivaltime, getClk());
 
     //TODO it needs to get the remaining time from somewhere
     //remainingtime = ??;
     remainingtime = runningtime;
-    int prev = getClk();
-     while (remainingtime > 0)
-     {      
-        int curr = getClk();
-        if (curr != prev)
-        {
-          prev = getClk();
-          remainingtime --;  
-        }
-     }
+    printf("Starting process with ID = %d - Remaining time = %d\n", getpid(), remainingtime);
+
+    waiting();
    
-    printf("\nProcess with pid = %d - Finish time = %d\n",getpid(), getClk());
+    printf("Process with pid = %d - Finish time = %d\n",getpid(), getClk());
     kill(getppid(), SIGUSR1);
 
     destroyClk(false);
@@ -36,18 +33,24 @@ int main(int agrc, char * argv[])
     return 0;
 }
 
-void SIGCONThandler(int signum)
-{
+void waiting() {
   int prev = getClk();
-  while (remainingtime > 0)
+  //printf("Start run ID: %d at time: %d and rem time = %d\n", getpid(), getClk(), remainingtime);
+  while (remainingtime > 0 )
       {      
         int curr = getClk();
         if (curr != prev)
         {
-          prev = getClk();
-          remainingtime --;  
+          prev = getClk();   
+          remainingtime --;   
+          printf("Process ID = %d - Remaining time = %d\n", getpid(), remainingtime);
         }
       }
-  
+}
+
+void SIGCONThandler(int signum)
+{
+  waiting();
   signal(SIGCONT, SIGCONThandler);
 }
+
