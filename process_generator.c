@@ -159,11 +159,10 @@ int main(int argc, char *argv[])
     // 6. Send the information to the scheduler at the appropriate time.
     // 7. Clear clock resources
 
-    sleep(10);
+    while(true);
     destroyClk(true);
-    kill(getpgrp(), SIGTERM);
-    
     msgctl(msgq_id, IPC_RMID, (struct msqid_ds *)0);
+    kill(getpgrp(), SIGKILL);
 
   
  
@@ -175,7 +174,7 @@ void clearResources(int signum)
 {
     destroyClk(true);
     msgctl(msgq_id, IPC_RMID, (struct msqid_ds *)0);
-    kill(getpgrp(), SIGTERM);
+    kill(getpgrp(), SIGKILL);
     // TODO: Clears all resources in case of interruption
 }
 
@@ -219,7 +218,7 @@ int createSchedulerProcess () {
     }
     else if (schedulerID == 0)
     {
-        if (execl("./scheduler.out","scheduler.out", algo, NULL) == -1)
+        if (execl("./scheduler.out","scheduler.out", algo, processesCount, NULL) == -1)
         {
              perror("execl: ");
              exit(1);

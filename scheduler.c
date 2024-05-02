@@ -30,9 +30,11 @@
 
 // }
 
-PriorityQueue* PQ;
-Queue* Q;
+PriorityQueue* PQ = NULL;
+Queue* Q = NULL;
+Queue* finishedQueue = NULL;
 
+int processCount; // to check if all processes finished or other processes were not sent yet
 int algorithm;
 
 key_t sch_key_id;
@@ -42,32 +44,33 @@ struct msgbuff SCH_message;
 
 /////// FUNCTIONS ////////
 
-int forkNewProcess (char* runtime, char* arrivaltime);
-void getAlgorithm ();
-void connectWithGenerator ();
-void addProcess ();
-void recivehandler (int signum);
+int forkNewProcess(char* runtime, char* arrivaltime);
+void getAlgorithm();
+void connectWithGenerator();
+void addProcess();
+void finishedPhandler(int signum);
+void sigtermhandler(int signum);
 
 
 int main(int argc, char * argv[])
 {
     initClk();
+
+    signal(SIGTERM, sigtermhandler); // to free the allocated memory
+    signal(SIGUSR1, finishedPhandler); // to recieve that a process has finished its execution
     algorithm = atoi(argv[1]);
+    processCount = atoi(argv[2]);
 
     connectWithGenerator();
     getAlgorithm();
     
     //TODO implement the scheduler :)
-
+    finishedQueue = createQueue(); // create queue to recieve finished processes
     while (true)
     {
     sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
-    if (sch_rec_val == -1)
-        perror("Error in receive");
-    else 
-    { 
-        addProcess ();
-    }
+    if (sch_rec_val != -1)
+       addProcess ();
     }
     destroyClk(true);
     return 0;
@@ -90,9 +93,11 @@ int forkNewProcess (char* runnungtime, char* arrivaltime)
       }
   }
 
-  /////*********************///////////
-  kill (id, SIGSTOP); // stop the forked process untill its turn
-
+  if (((algorithm == 1 || algorithm == 2) && !PQisEmpty(PQ)) || (algorithm == 3 && !isEmpty(Q)))
+  {
+      kill (id, SIGSTOP); // stop the forked (except if the ready queue is empty) process untill its turn
+  }
+ 
   return id;
 }
 
@@ -102,18 +107,18 @@ void getAlgorithm()
 {
   switch (algorithm) 
     {
-      case 1:
-          printf ("You are in HPF mode\n");
-          PQ = createPriorityQueue();
-          break;
-      case 2:
-          printf ("You are in SRTN mode\n");
-          PQ = createPriorityQueue();
-          break;
-      case 3:
-          printf ("You are in RR mode\n");
-          Q = createQueue();
-          break;
+    case 1:
+        printf ("You are in HPF mode\n");
+        PQ = createPriorityQueue();
+    break;
+    case 2:
+        printf ("You are in SRTN mode\n");
+        PQ = createPriorityQueue();
+    break;
+    case 3:
+        printf ("You are in RR mode\n");
+        Q = createQueue();
+    break;
     }
 }
 
@@ -146,19 +151,77 @@ void addProcess ()
     int pid = forkNewProcess(runnungtimearg, arrivaltime); // create a real process
     newprocess->realPid = pid; // set the real id of the forked process
 
-    printf("process with id: %d forked\n", newprocess->id);
+    process * currentrunning = NULL;
+
     switch (algorithm)
     {
+        case 1:
+          if (!PQisEmpty(PQ)) // if the queue is not empty check if we should stop the running process
+          {
+            currentrunning = PQpeek(PQ);
+            if (newprocess->priority < currentrunning->priority)
+            {
+              kill (currentrunning->realPid, SIGSTOP);
+              kill (newprocess->realPid, SIGCONT);
+            }
+          }
+          PQenqueue(PQ, newprocess, newprocess->priority);
+        break;
+
+        case 2:
+          if (!PQisEmpty(PQ)) // if the queue is not empty check if we should stop the running process
+          {
+            currentrunning = PQpeek(PQ);
+            if (newprocess->runningtime < currentrunning->remainingtime)
+            {
+                kill (currentrunning->realPid, SIGSTOP);
+                kill (newprocess->realPid, SIGCONT);
+            }
+          }
+          STRNenqueue(PQ, newprocess, newprocess->remainingtime);
+        break;
+
         case 3:
           normalQenqueue(Q, newprocess);
-        //  printf("Queue now is: \n");    
-        //  display(Q);
-          break;
-        default:
-          PQenqueue(PQ, newprocess, newprocess->priority);
-        //  printf("Priority queue now is: \n");    
-        //  PQdisplay(PQ);
-          break;
+       
+        break;
         }
-   // kill (pid, SIGCONT); // stop the forked process untill its turn
+}
+
+
+void sigtermhandler(int signum)
+{
+  free(Q);
+  free(PQ);
+  kill(getpgrp(), SIGKILL);
+
+  signal(SIGTERM, sigtermhandler);
+}
+
+
+
+void finishedPhandler(int signum)
+{
+process *finishedprocess = NULL;
+
+if (algorithm == 1 || algorithm == 2)
+{
+  finishedprocess = PQdequeue(PQ);
+  if (!PQisEmpty(PQ))
+    kill (PQpeek(PQ)->realPid, SIGCONT); // start executing the next process
+}
+else
+{
+  finishedprocess = dequeue(Q);
+  if (!isEmpty(Q))
+    kill (peek(Q)->realPid, SIGCONT); // start executing the next process
+}
+
+normalQenqueue(finishedQueue, finishedprocess);
+processCount--;
+if (processCount == 0)
+{
+  kill(getppid(), SIGINT); // if all processes are done then close the program
+}
+signal(SIGUSR1, finishedPhandler);
 }
