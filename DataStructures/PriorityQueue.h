@@ -55,6 +55,30 @@ void PQenqueue(PriorityQueue* pq, process* newprocess, int priority) {
 }
 
 
+void STRNenqueue(PriorityQueue* pq, process* newprocess, int remtime) {
+    // Create a new PQnode
+    PQnode* newNode = (PQnode*)malloc(sizeof(PQnode));
+    if (newNode == NULL) {
+        printf("Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+    newNode->nodeProcess = newprocess;
+
+    if (pq->front == NULL || remtime < pq->front->nodeProcess->remainingtime) {
+        newNode->next = pq->front;
+        pq->front = newNode;
+    } else {
+        PQnode* current = pq->front;
+        while (current->next != NULL && current->next->nodeProcess->remainingtime <= remtime) {
+            current = current->next;
+        }
+        newNode->next = current->next;
+        current->next = newNode;
+    }
+}
+
+
+
 process* PQdequeue(PriorityQueue* pq) {
     if (pq->front == NULL) {
         printf("Queue is empty\n");

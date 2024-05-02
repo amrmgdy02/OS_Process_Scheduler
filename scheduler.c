@@ -25,35 +25,14 @@
 
 // }
 
-// void HPF()
-// {
-//   int arrivaltime = getClk();
-
-//   runningProcess = peek(PQ);
-
-//   while (peek(PQ))
-//   {
-//     if (getClk() - arrivaltime != 0)
-//     {
-//       arrivaltime = getClk();
-
-//       runningProcess->remainingtime -= 1;
-
-//       if (runningProcess->remainingtime == 0)
-//       {
-//         process *finished = dequeue(PQ);
-//         free(finished);
-//       }
-//     }
-//   }
-// }
-
-PriorityQueue *PQ;
-Queue *Q;
+PriorityQueue* PQ = NULL;
+Queue* Q = NULL;
+Queue* finishedQueue = NULL;
 
 // set to zero when it receives a termination signal from a process
 int flag = 1;
 
+int processCount; // to check if all processes finished or other processes were not sent yet
 int algorithm;
 
 key_t sch_key_id;
@@ -63,38 +42,37 @@ process *runningProcess = NULL;
 
 /////// FUNCTIONS ////////
 
-int forkNewProcess(char *runtime, char *arrivaltime);
+int forkNewProcess(char* runtime, char* arrivaltime);
 void getAlgorithm();
 void connectWithGenerator();
 void addProcess();
-// void recivehandler(int signum); ?? What is that
+void finishedPhandler(int signum);
+void sigtermhandler(int signum);
 void RRScheduler(int quantum);
 void processTerminated(int signum);
 
 int main(int argc, char *argv[])
 {
-  initClk();
-  // This handler to handle the termination of the processes in RR
-  signal(SIGUSR1, processTerminated);
-  algorithm = atoi(argv[1]);
+    initClk();
 
-  connectWithGenerator();
-  getAlgorithm();
+    signal(SIGTERM, sigtermhandler); // to free the allocated memory
+    signal(SIGUSR1, finishedPhandler); // to recieve that a process has finished its execution
+    algorithm = atoi(argv[1]);
+    processCount = atoi(argv[2]);
 
-  // TODO implement the scheduler :)
-
-  while (true)
-  {
-    sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
-    if (sch_rec_val == -1)
-      perror("Error in receive");
-    else
+    connectWithGenerator();
+    getAlgorithm();
+    
+    //TODO implement the scheduler :)
+    finishedQueue = createQueue(); // create queue to recieve finished processes
+    while (true)
     {
-      addProcess();
+    sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
+    if (sch_rec_val != -1)
+       addProcess ();
     }
-  }
-  destroyClk(true);
-  return 0;
+    destroyClk(true);
+    return 0;
 }
 
 int forkNewProcess(char *runnungtime, char *arrivaltime)
@@ -114,9 +92,11 @@ int forkNewProcess(char *runnungtime, char *arrivaltime)
     }
   }
 
-  /////*********************///////////
-  kill(id, SIGSTOP); // stop the forked process untill its turn
-
+  if (((algorithm == 1 || algorithm == 2) && !PQisEmpty(PQ)) || (algorithm == 3 && !isEmpty(Q)))
+  {
+      kill (id, SIGSTOP); // stop the forked (except if the ready queue is empty) process untill its turn
+  }
+ 
   return id;
 }
 
@@ -124,21 +104,21 @@ int forkNewProcess(char *runnungtime, char *arrivaltime)
 
 void getAlgorithm()
 {
-  switch (algorithm)
-  {
-  case 1:
-    printf("You are in HPF mode\n");
-    PQ = createPriorityQueue();
+  switch (algorithm) 
+    {
+    case 1:
+        printf ("You are in HPF mode\n");
+        PQ = createPriorityQueue();
     break;
-  case 2:
-    printf("You are in SRTN mode\n");
-    PQ = createPriorityQueue();
+    case 2:
+        printf ("You are in SRTN mode\n");
+        PQ = createPriorityQueue();
     break;
-  case 3:
-    printf("You are in RR mode\n");
-    Q = createQueue();
+    case 3:
+        printf ("You are in RR mode\n");
+        Q = createQueue();
     break;
-  }
+    }
 }
 
 ///////////////////////////////////////////
@@ -170,21 +150,79 @@ void addProcess()
   int pid = forkNewProcess(runnungtimearg, arrivaltime); // create a real process
   newprocess->realPid = pid;                             // set the real id of the forked process
 
-  printf("process with id: %d forked\n", newprocess->id);
-  switch (algorithm)
-  {
-  case 3:
-    normalQenqueue(Q, newprocess);
-    //  printf("Queue now is: \n");
-    //  display(Q);
-    break;
-  default:
-    PQenqueue(PQ, newprocess, newprocess->priority);
-    //  printf("Priority queue now is: \n");
-    //  PQdisplay(PQ);
-    break;
-  }
-  // kill (pid, SIGCONT); // stop the forked process untill its turn
+    process * currentrunning = NULL;
+
+    switch (algorithm)
+    {
+        case 1:
+          if (!PQisEmpty(PQ)) // if the queue is not empty check if we should stop the running process
+          {
+            currentrunning = PQpeek(PQ);
+            if (newprocess->priority < currentrunning->priority)
+            {
+              kill (currentrunning->realPid, SIGSTOP);
+              kill (newprocess->realPid, SIGCONT);
+            }
+          }
+          PQenqueue(PQ, newprocess, newprocess->priority);
+        break;
+
+        case 2:
+          if (!PQisEmpty(PQ)) // if the queue is not empty check if we should stop the running process
+          {
+            currentrunning = PQpeek(PQ);
+            if (newprocess->runningtime < currentrunning->remainingtime)
+            {
+                kill (currentrunning->realPid, SIGSTOP);
+                kill (newprocess->realPid, SIGCONT);
+            }
+          }
+          STRNenqueue(PQ, newprocess, newprocess->remainingtime);
+        break;
+
+        case 3:
+          normalQenqueue(Q, newprocess);
+       
+        break;
+        }
+}
+
+
+void sigtermhandler(int signum)
+{
+  free(Q);
+  free(PQ);
+  kill(getpgrp(), SIGKILL);
+
+  signal(SIGTERM, sigtermhandler);
+}
+
+
+
+void finishedPhandler(int signum)
+{
+process *finishedprocess = NULL;
+
+if (algorithm == 1 || algorithm == 2)
+{
+  finishedprocess = PQdequeue(PQ);
+  if (!PQisEmpty(PQ))
+    kill (PQpeek(PQ)->realPid, SIGCONT); // start executing the next process
+}
+else
+{
+  finishedprocess = dequeue(Q);
+  if (!isEmpty(Q))
+    kill (peek(Q)->realPid, SIGCONT); // start executing the next process
+}
+
+normalQenqueue(finishedQueue, finishedprocess);
+processCount--;
+if (processCount == 0)
+{
+  kill(getppid(), SIGINT); // if all processes are done then close the program
+}
+signal(SIGUSR1, finishedPhandler);
 }
 
 ///////////////////////////////////////////
