@@ -223,14 +223,17 @@ void RRScheduler(int quantum)
 {
   // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
 
-  runningProcess = normalQdequeue(Q);
+  runningProcess = dequeue(Q);
 
   int reamingtime = runningProcess->runningtime;
 
   while (!isEmpty(Q))
   {
-
-    int runtime = min(quantum, reamingtime);
+    int runtime;
+    if (quantum < reamingtime)
+      runtime = quantum;
+    else
+      runtime = reamingtime;
 
     kill(runningProcess->realPid, SIGCONT);
     sleep(runtime);

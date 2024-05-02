@@ -23,6 +23,7 @@ int createSchedulerProcess ();
 int msgq_id;
 char algo[2]; // string to be sent to shceduler as argument
 char processesCount[2]; 
+char quantum[5];
 
 void clearResources(int);
 int main(int argc, char *argv[])
@@ -86,6 +87,7 @@ int main(int argc, char *argv[])
     {
         printf("Enter the time slice for Round Robin: ");
         scanf("%d", &RR);
+        sprintf(quantum, "%d", RR);
     }
 
     printf("Chosen algorithm: %d\n", algorithm);
@@ -215,7 +217,7 @@ int createSchedulerProcess () {
     }
     else if (schedulerID == 0)
     {
-        if (execl("./scheduler.out","scheduler.out", algo, processesCount, NULL) == -1)
+        if (execl("./scheduler.out","scheduler.out", algo, processesCount, quantum,NULL) == -1)
         {
              perror("execl: ");
              exit(1);
