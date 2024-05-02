@@ -57,6 +57,7 @@ int main(int argc, char *argv[])
 
     signal(SIGTERM, sigtermhandler); // to free the allocated memory
     signal(SIGUSR1, finishedPhandler); // to recieve that a process has finished its execution
+    signal(SIGUSR2, processTerminated); // to handle the termination of a process
     algorithm = atoi(argv[1]);
     processCount = atoi(argv[2]);
 

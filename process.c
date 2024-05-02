@@ -24,10 +24,10 @@ int main(int agrc, char * argv[])
         if (curr != prev)
         {
           prev = getClk();
-          remainingtime --;  
+          remainingtime--;  
         }
         if (remainingtime == 0)
-           kill(getppid(),SIGUSR1);
+           kill(getppid(),SIGUSR2);
         }
      }
    
