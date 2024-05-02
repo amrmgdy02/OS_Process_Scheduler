@@ -32,7 +32,7 @@ int PQisEmpty (PriorityQueue* pq) {
 }
 
 
-void PQenqueue(PriorityQueue* pq, process* newprocess, int priority) {
+void HPFenqueue(PriorityQueue* pq, process* newprocess, int priority) {
     // Create a new PQnode
     PQnode* newNode = (PQnode*)malloc(sizeof(PQnode));
     if (newNode == NULL) {
