@@ -5,6 +5,9 @@ PriorityQueue* PQ = NULL;
 Queue* Q = NULL;
 Queue* finishedQueue = NULL;
 
+// set to zero when it receives a termination signal from a process
+int flag = 1;
+
 int processCount; // to check if all processes finished or other processes were not sent yet
 int algorithm;
 
@@ -21,7 +24,8 @@ void connectWithGenerator();
 void addProcess();
 void finishedPhandler(int signum);
 void sigtermhandler(int signum);
-
+void RRScheduler(int quantum);
+void processTerminated(int signum);
 
 int main(int argc, char *argv[])
 {
@@ -29,6 +33,7 @@ int main(int argc, char *argv[])
 
     signal(SIGTERM, sigtermhandler); // to free the allocated memory
     signal(SIGUSR1, finishedPhandler); // to recieve that a process has finished its execution
+    signal(SIGUSR2, processTerminated); // to handle the termination of a process
     algorithm = atoi(argv[1]);
     processCount = atoi(argv[2]);
 
@@ -210,4 +215,48 @@ if (processCount == 0)
   kill(getppid(), SIGINT); // if all processes are done then close the program
 }
 signal(SIGUSR1, finishedPhandler);
+}
+
+///////////////////////////////////////////
+
+void RRScheduler(int quantum)
+{
+  // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
+
+  runningProcess = normalQdequeue(Q);
+
+  int reamingtime = runningProcess->runningtime;
+
+  while (!isEmpty(Q))
+  {
+
+    int runtime = min(quantum, reamingtime);
+
+    kill(runningProcess->realPid, SIGCONT);
+    sleep(runtime);
+
+    if (flag)
+    {
+      kill(runningProcess->realPid, SIGSTOP);
+      normalQenqueue(Q, runningProcess);
+    }
+    else
+    {
+      free(runningProcess);
+      flag = 1;
+    }
+
+  }
+
+}
+
+///////////////////////////////////////////
+
+void processTerminated(int signum)
+{
+  // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
+  // the scheduler should remove the process from the queue and free its memory
+
+  flag = 0;
+  
 }
