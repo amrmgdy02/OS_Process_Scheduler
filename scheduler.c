@@ -245,7 +245,7 @@ void getAlgorithm()
     break;
   case 3:
     printf("You are in RR mode\n");
-    Q = createQueue();
+    RRScheduler(quantum);
     break;
   }
 }
