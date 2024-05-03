@@ -283,14 +283,14 @@ void finishedPhandler(int signum)
     runningProcess = NULL;
     finishedprocess = PQdequeue(PQ);
     printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
-  schedulerLog = fopen("scheduler.log", "w");
-  if (schedulerLog == NULL)
-  {
-    perror("Error opening log file");
-    exit(-1);
-  }
-  printProcessFinish(schedulerLog, getClk(), finishedprocess->id, "finished", finishedprocess->arrivaltime, finishedprocess->runningtime - (finishedprocess->remainingtime), finishedprocess->remainingtime, finishedprocess->waitingtime);
-  
+    schedulerLog = fopen("scheduler.log", "w");
+    if (schedulerLog == NULL)
+    {
+      perror("Error opening log file");
+      exit(-1);
+    }
+    printProcessFinish(schedulerLog, getClk(), finishedprocess->id, "finished", finishedprocess->arrivaltime, finishedprocess->runningtime - (finishedprocess->remainingtime), finishedprocess->remainingtime, finishedprocess->waitingtime);
+    
     free(finishedprocess);
     processCount--;
   }
@@ -372,7 +372,7 @@ void RRScheduler(int quantum)
         free(runningProcess);
         processCount--;
         flag = 1;
-        // printf("Done cleaning\n");
+        printf("Done cleaning\n");
       }
     }
 
