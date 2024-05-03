@@ -1,15 +1,15 @@
 #include "DataStructures/PriorityQueue.h"
 #include <sys/file.h>
 #include <math.h>
-// #include "DataStructures/Queuebasic.h"
+#include "DataStructures/Queuebasic.h"
 
 PriorityQueue *PQ = NULL;
 Queue *Q = NULL;
 Queue *finishedQueue = NULL;
 
-    int TA;
-    int WTA;
-// intQueue *allWTA = NULL;
+int TA;
+int WTA;
+intQueue *allWTA = NULL;
 
 // set to zero when it receives a termination signal from a process
 int flag = 1;
@@ -31,8 +31,6 @@ int totalRT = 0;
 
 FILE *schedulerLog , *schedulerPref;
 
-// Queue *allWTA = NULL;
-
 process *runningProcess = NULL;
 
 /////// FUNCTIONS ////////
@@ -45,7 +43,6 @@ void sigtermhandler(int signum);
 void RRScheduler(int quantum);
 // void processTerminated(int signum);
 process *initProcess();
-void outputFileinit();
 void outputFile();
 
 void STRN();
@@ -65,14 +62,14 @@ int main(int argc, char *argv[])
   // signal(SIGUSR2, processTerminated); // to handle the termination of a process
   algorithm = atoi(argv[1]);
   processCount = atoi(argv[2]);
-  currentProcessCount=processCount;
+  currentProcessCount = processCount;
   quantum = atoi(argv[3]);
   finishedQueue = createQueue();
   connectWithGenerator();
 
   getAlgorithm();
 
-  // allWTA = intcreateQueue();
+  allWTA = intcreateQueue();
 
   // TODO implement the scheduler :)
 

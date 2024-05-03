@@ -1,6 +1,3 @@
-#include "Queue.h"
-
-
 struct intQueueNode;
 typedef struct intQueueNode* intQueueNodePtr;
 
@@ -15,8 +12,8 @@ typedef struct intQueue {
 } intQueue;
 
 
-Queue* intcreateQueue() {
-    Queue* pq = (Queue*)malloc(sizeof(Queue));
+intQueue* intcreateQueue() {
+    intQueue* pq = (intQueue*)malloc(sizeof(intQueue));
     if (pq == NULL) {
         printf("Memory allocation failed\n");
         exit(EXIT_FAILURE);
