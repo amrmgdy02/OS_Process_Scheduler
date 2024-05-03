@@ -41,7 +41,7 @@ void connectWithGenerator();
 void finishedPhandler(int signum);
 void sigtermhandler(int signum);
 void RRScheduler(int quantum);
-void processTerminated(int signum);
+// void processTerminated(int signum);
 process *initProcess();
 void outputFileinit();
 void outputFile();
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 
   signal(SIGTERM, sigtermhandler);    // to free the allocated memory
   signal(SIGUSR1, finishedPhandler);  // to recieve that a process has finished its execution
-  signal(SIGUSR2, processTerminated); // to handle the termination of a process
+  // signal(SIGUSR2, processTerminated); // to handle the termination of a process
   algorithm = atoi(argv[1]);
   processCount = atoi(argv[2]);
   finishedQueue = createQueue();
@@ -275,11 +275,12 @@ void sigtermhandler(int signum)
 
 void finishedPhandler(int signum)
 {
-  process *finishedprocess = NULL;
-
-  finishedprocess = PQdequeue(PQ);
-  runningProcess = NULL;
-  printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
+  if (algorithm != 3)
+  {
+    process *finishedprocess = NULL;
+    runningProcess = NULL;
+    finishedprocess = PQdequeue(PQ);
+    printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
   schedulerLog = fopen("scheduler.log", "w");
   if (schedulerLog == NULL)
   {
@@ -288,8 +289,15 @@ void finishedPhandler(int signum)
   }
   printProcessFinish(schedulerLog, getClk(), finishedprocess->id, "finished", finishedprocess->arrivaltime, finishedprocess->runningtime - (finishedprocess->remainingtime), finishedprocess->remainingtime, finishedprocess->waitingtime);
   
-  free(finishedprocess);
-  processCount--;
+    free(finishedprocess);
+    processCount--;
+  }
+  else
+  {
+    // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
+    // the scheduler should remove the process from the queue and free its memory
+    flag = 1;
+  }
   signal(SIGUSR1, finishedPhandler);
 }
 
@@ -297,22 +305,25 @@ void finishedPhandler(int signum)
 
 void RRScheduler(int quantum)
 {
-  // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
-
-  runningProcess = dequeue(Q);
-
-  int reamingtime = runningProcess->runningtime;
-
-  while (!isEmpty(Q))
+  Q = createQueue();
+  printf("Queue created with quantum = %d\n", quantum);
+  int counter = 0;
+  while (true)
   {
-    int runtime;
-    if (quantum < reamingtime)
-      runtime = quantum;
-    else
-      runtime = reamingtime;
+    if (!isEmpty(Q))
+    {
+      runningProcess = dequeue(Q);
 
-    kill(runningProcess->realPid, SIGCONT);
-    if (runningProcess->remainingtime == runningProcess->runningtime)
+      int remainingtime = runningProcess->remainingtime;
+      int runtime;
+      
+      if (quantum < remainingtime)
+        runtime = quantum;
+      else
+        runtime = remainingtime;
+
+      kill(runningProcess->realPid, SIGCONT);
+      if (runningProcess->remainingtime == runningProcess->runningtime)
       {
         runningProcess->starttime = getClk();
         runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime)
@@ -325,31 +336,52 @@ void RRScheduler(int quantum)
         printProcessState(schedulerLog, getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       }
     sleep(runtime);
+    }
 
-    if (flag)
+    // This loop checks for the incoming processes, if there is no incoming processes, it will break and continue running the current process
+    if (processCount > 0)
     {
-      kill(runningProcess->realPid, SIGSTOP);
-      printProcessState(schedulerLog, getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
+      // int lastID = -1;
+      while ((msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), IPC_NOWAIT)) != -1)
+      {
+        // if (lastID == SCH_message.arrivedProcess.id)
+        //   continue;
+
+        printf("Received\n");
+        process *newprocess = initProcess();
+        normalQenqueue(Q, newprocess);
+
+        // lastID = newprocess->id;
+      }
+    }
+
+    if (runningProcess)
+    {
+      // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
+      if (flag)
+      {
+        kill(runningProcess->realPid, SIGSTOP);
+        printProcessState(schedulerLog, getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       runningProcess->laststoptime = getClk();
       normalQenqueue(Q, runningProcess);
+      }
+      else
+      {
+        free(runningProcess);
+        processCount--;
+        flag = 1;
+        // printf("Done cleaning\n");
+      }
     }
-    else
-    {
-      free(runningProcess);
-      flag = 1;
-    }
+
+    if (processCount == 0)
+      break;
   }
+
+  free(Q);
 }
 
 ///////////////////////////////////////////
-
-void processTerminated(int signum)
-{
-  // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
-  // the scheduler should remove the process from the queue and free its memory
-
-  flag = 0;
-}
 
 process *initProcess()
 {
@@ -413,25 +445,17 @@ void printProcessState(FILE *schedulerLog, int time, int processID, char *state,
   }
   printf("#At time %d process %d %s arr %d total %d remain %d wait %d\n",
          time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
-  fprintf(schedulerLog, "#At time %d process %d state %s arr %d total %d remain %d wait %d\n",
-          time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
+  // fprintf(schedulerLog, "#At time %d process %d state %s arr %d total %d remain %d wait %d\n",
+  //         time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
 }
 
-void printProcessFinish(FILE *schedulerLog, int time, int processID, char *state, int arrivalTime, int totalRunningTime, int remainingTime, int waitingTime)
-{
-  schedulerLog = fopen("scheduler.log", "w");
-  if (schedulerLog == NULL)
-  {
-    perror("Error opening log file");
-    exit(-1);
-  }
-  int TA = time - arrivaltime;
-  float WTA = (float)TA / (float)totalRunningTime;
-  normalQenqueue(allWTA, WTA);
-  totalWTA += WTA;
-  totalWaitingTime += waitingTime;
-  totalRT += totalRunningTime;
-   fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d TA %d WTA %.2f\n",
-            time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime, TA, WTA);
 
-}
+///////////////////////////////////////////
+
+// void processTerminated(int signum)
+// {
+//   // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
+//   // the scheduler should remove the process from the queue and free its memory
+
+//   flag = 0;
+// }
