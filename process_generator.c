@@ -15,6 +15,8 @@ Queue * processesQueue;
 struct msgbuff processmsg;
 
 
+//////GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG////////////
+
 
 void setProcessParameters (int id,int arr, int runningtime, int pri);
 int createClockProcess ();
