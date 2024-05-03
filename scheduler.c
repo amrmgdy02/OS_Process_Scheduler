@@ -109,9 +109,8 @@ void STRN()
       kill(runningProcess->realPid, SIGCONT);
       if (runningProcess->remainingtime == runningProcess->runningtime)
       {
-        runningProcess->arrivaltime = getClk();
-        printProcessState(schedulerLog, getClk(), 1, "started", 0, 5, 3, 6);
-        // printProcessState(schedulerLog, getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime - (runningProcess->arrivaltime));
+        runningProcess->starttime = getClk();
+        printProcessState(schedulerLog, getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime - (runningProcess->arrivaltime));
       }
       else
       {
@@ -140,7 +139,7 @@ void STRNaddprocess()
       runningProcess->lastRunningClk = getClk();
       if (runningProcess->remainingtime == runningProcess->runningtime)
       {
-        runningProcess->arrivaltime = getClk();
+        runningProcess->starttime = getClk();
         printProcessState(schedulerLog, getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime - (runningProcess->arrivaltime));
       }
       else
@@ -364,10 +363,8 @@ void outputFileinit()
 // }
 void printProcessState(FILE *schedulerLog, int time, int processID, char *state, int arrivalTime, int totalRunningTime, int remainingTime, int waitingTime)
 {
-  printf("#At time %d process %d state %s arr %d w total %d remain %d wait %d\n",
+  printf("#At time %d process %d %s arr %d total %d remain %d wait %d\n",
          time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
-  fprintf(schedulerLog, "#At time %d process %d state %s arr %d w total %d remain %d wait %d\n",
-          time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
-  printf("#At time %d process %d state %s arr %d w total %d remain %d wait %d\n",
-         time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
+  // fprintf(schedulerLog, "#At time %d process %d state %s arr %d total %d remain %d wait %d\n",
+  //         time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
 }
