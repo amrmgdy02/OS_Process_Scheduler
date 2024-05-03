@@ -3,7 +3,9 @@
 PriorityQueue *PQ = NULL;
 Queue *Q = NULL;
 Queue *finishedQueue = NULL;
-Queue *allWTA = NULL;
+
+
+//Queue *allWTA = NULL;
 
 
 // set to zero when it receives a termination signal from a process
@@ -23,7 +25,9 @@ int *children_shmaddr;
 int totalWaitingTime = 0;
 int totalWTA = 0;
 int totalRunningTime = 0;
-Queue *allWTA = NULL;
+
+
+//Queue *allWTA = NULL;
 
 
 process *runningProcess = NULL;
@@ -33,7 +37,6 @@ process *runningProcess = NULL;
 int forkNewProcess(char *runtime, char *arrivaltime, int run);
 void getAlgorithm();
 void connectWithGenerator();
-void addProcess();
 void finishedPhandler(int signum);
 void sigtermhandler(int signum);
 void RRScheduler(int quantum);
@@ -59,28 +62,19 @@ int main(int argc, char *argv[])
   processCount = atoi(argv[2]);
   finishedQueue = createQueue();
   connectWithGenerator();
+
+
   getAlgorithm();
-  outputFileinit();
-  allWTA = createQueue();
+
+
+  //outputFileinit();
+ // allWTA = createQueue();
 
   // TODO implement the scheduler :)
 
   // create queue to recieve finished processes
-  while (processCount > 0)
-  {
-    sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
-    if (sch_rec_val != -1){
-
-      addProcess();
-      totalRunningTime+=SCH_message.arrivedProcess.runningtime;
-}
-    if (!PQisEmpty(PQ) && runningProcess == NULL)
-    {
-      runningProcess = PQpeek(PQ);
-      kill(runningProcess->realPid, SIGCONT);
-    }
-  }
-  outputFile();
+  
+  // outputFile();
   destroyClk(true);
   kill(getppid(), SIGINT);
   return 0;
@@ -110,7 +104,7 @@ void STRN()
 
 void STRNaddprocess()
 {
-  process *newprocess = initproces();
+  process *newprocess = initProcess();
   if (runningProcess != NULL)
   {
     runningProcess->remainingtime = runningProcess->remainingtime - (getClk()- runningProcess->lastRunningClk);
@@ -152,7 +146,7 @@ void HPF()
 
 void HPFaddprocess()
 {
-  process *newprocess = initproces();
+  process *newprocess = initProcess();
 
  if(runningProcess == NULL)
  {
@@ -224,23 +218,6 @@ void connectWithGenerator()
 }
 
 ////////////////////////////////////////////
-
-process *initproces()
-{
-  process *newprocess = createProcess(SCH_message.arrivedProcess.id, SCH_message.arrivedProcess.priority,
-  SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.runningtime);
-
-  char runnungtimearg[20]; // a string containing the raunnumg time to be sent as argument to the forked process
-  sprintf(runnungtimearg, "%d", newprocess->runningtime);
-
-  char arrivaltime[20]; // same for arrival time (msh 3aref hn7tagha wla la)
-  sprintf(arrivaltime, "%d", newprocess->arrivaltime);
- 
-  int pid = forkNewProcess(runnungtimearg, arrivaltime, newprocess->runningtime); // create a real process
-  newprocess->realPid = pid; // set the real id of the forked process
-  return newprocess;
-}
-
 
 void sigtermhandler(int signum)
 {
@@ -324,33 +301,33 @@ process *initProcess()
   return newprocess;
 }
 
-void outputFileinit(){
-  schedulerLog = fopen("scheduler.log", "w");
-  if (schedulerLog == NULL){
-    perror("Error opening log file");
-    exit(-1);
-  }
-  fprintf(schedulerLog, "#At time x process y state arr w total z remain y wait k\n");
-  schedulerPref = fopen("scheduler.pref", "w");
-  if (schedulerPref == NULL){
-    perror("Error opening pref file");
-    exit(-1);
-  }
-}
+// void outputFileinit(){
+//   schedulerLog = fopen("scheduler.log", "w");
+//   if (schedulerLog == NULL){
+//     perror("Error opening log file");
+//     exit(-1);
+//   }
+//   fprintf(schedulerLog, "#At time x process y state arr w total z remain y wait k\n");
+//   schedulerPref = fopen("scheduler.pref", "w");
+//   if (schedulerPref == NULL){
+//     perror("Error opening pref file");
+//     exit(-1);
+//   }
+// }
 
-void outputFile(){
-  float currentProcessCount = countQueue(allWTA);
-  float avgWTA = (float)totalWTA/currentProcessCount;
-  float avgWaitingTime = (float)totalWaitingTime/currentProcessCount;
-  float CPUutilization = (float)totalRunningTime/getClk() *100;
-  int currentTime=0, StandardDeviation=0;
-  while(!isEmpty(allWTA)){
-    currentTime=dequeue(allWTA);
-    StandardDeviation+=pow(currentTime-avgWTA,2);
-  }
-  StandardDeviation=sqrt(StandardDeviation/currentProcessCount);
-  fprintf(schedulerPref, "CPU Utilization = %f%% \nAvg WTA = %f\nAvg WT = %f\nStd WTA = %f\n" , CPUutilization, avgWTA, avgWaitingTime, StandardDeviation);
-  printf(" Output generated seccussfully\n");
-  fclose(schedulerLog);
-  fclose(schedulerPref);
-}
+// void outputFile(){
+//   float currentProcessCount = countQueue(allWTA);
+//   float avgWTA = (float)totalWTA/currentProcessCount;
+//   float avgWaitingTime = (float)totalWaitingTime/currentProcessCount;
+//   float CPUutilization = (float)totalRunningTime/getClk() *100;
+//   int currentTime=0, StandardDeviation=0;
+//   while(!isEmpty(allWTA)){
+//     currentTime=dequeue(allWTA);
+//     StandardDeviation+=pow(currentTime-avgWTA,2);
+//   }
+//   StandardDeviation=sqrt(StandardDeviation/currentProcessCount);
+//   fprintf(schedulerPref, "CPU Utilization = %f%% \nAvg WTA = %f\nAvg WT = %f\nStd WTA = %f\n" , CPUutilization, avgWTA, avgWaitingTime, StandardDeviation);
+//   printf(" Output generated seccussfully\n");
+//   fclose(schedulerLog);
+//   fclose(schedulerPref);
+// }
