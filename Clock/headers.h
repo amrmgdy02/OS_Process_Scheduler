@@ -11,6 +11,12 @@
 #include <unistd.h>
 #include <signal.h>
 
+
+
+///////////////////////////////////////////////////////////////////////////////////
+
+
+
 typedef short bool;
 #define true 1
 #define false 0
@@ -57,7 +63,11 @@ struct msgbuff
     process arrivedProcess;
 };
 
-
+struct sch_proc_buff
+{
+    long mtype;
+    int currtime;
+};
 
 
 ///==============================

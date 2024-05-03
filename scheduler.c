@@ -3,7 +3,9 @@
 PriorityQueue *PQ = NULL;
 Queue *Q = NULL;
 Queue *finishedQueue = NULL;
-Queue *allWTA = NULL;
+
+
+//Queue *allWTA = NULL;
 
 
 // set to zero when it receives a termination signal from a process
@@ -23,7 +25,9 @@ int *children_shmaddr;
 int totalWaitingTime = 0;
 int totalWTA = 0;
 int totalRunningTime = 0;
-Queue *allWTA = NULL;
+
+
+//Queue *allWTA = NULL;
 
 
 process *runningProcess = NULL;
@@ -33,7 +37,6 @@ process *runningProcess = NULL;
 int forkNewProcess(char *runtime, char *arrivaltime, int run);
 void getAlgorithm();
 void connectWithGenerator();
-void addProcess();
 void finishedPhandler(int signum);
 void sigtermhandler(int signum);
 void RRScheduler(int quantum);
@@ -59,9 +62,13 @@ int main(int argc, char *argv[])
   processCount = atoi(argv[2]);
   finishedQueue = createQueue();
   connectWithGenerator();
+
+
   getAlgorithm();
-  outputFileinit();
-  allWTA = createQueue();
+
+
+  //outputFileinit();
+ // allWTA = createQueue();
 
   // TODO implement the scheduler :)
 
@@ -86,53 +93,49 @@ int main(int argc, char *argv[])
   return 0;
 }
 
+
 void STRN()
 {
   PQ = createPriorityQueue();
+  int prev = getClk();
   while (processCount > 0)
-  {
-    sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
-    if (sch_rec_val != -1)
-    {
-      STRNaddprocess();
-    }
-    if (!PQisEmpty(PQ) && runningProcess == NULL)
-    {
-      runningProcess = PQdequeue(PQ);
-      runningProcess->lastRunningClk = getClk();
-      kill(runningProcess->realPid, SIGCONT);
-    }
-  }
+      {
+        sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
+        if (sch_rec_val != -1)
+        {
+          STRNaddprocess();
+        }
+        if (runningProcess == NULL && !PQisEmpty(PQ))
+        {
+          runningProcess = PQpeek(PQ);
+          kill(runningProcess->realPid, SIGCONT);
+          runningProcess->lastRunningClk = getClk();
+        }
+      }
   free(PQ);
 }
 
 void STRNaddprocess()
 {
   process *newprocess = initProcess();
-
-  if (runningProcess != NULL) // update the remaining time before comparing
+  if (runningProcess != NULL)
   {
-    runningProcess->remainingtime = runningProcess->remainingtime - (getClk() - runningProcess->lastRunningClk);
+    runningProcess->remainingtime = runningProcess->remainingtime - (getClk()- runningProcess->lastRunningClk);
     runningProcess->lastRunningClk = getClk();
-
-    if (newprocess->runningtime < runningProcess->remainingtime)
+    STRNenqueue(PQ, newprocess, newprocess->remainingtime);
+   // printf("At time = %d - Process id = %d - Rem time = %d\n", getClk(), runningProcess->id, runningProcess->remainingtime);
+    if (newprocess->remainingtime < runningProcess->remainingtime)
     {
       kill(runningProcess->realPid, SIGTSTP);
-      STRNenqueue(PQ, runningProcess, runningProcess->remainingtime); // return the stopped process to ready queue
-      kill(newprocess->realPid, SIGCONT);
       runningProcess = newprocess;
+      kill(runningProcess->realPid, SIGCONT);
       runningProcess->lastRunningClk = getClk();
     }
-    else
-    {
-      STRNenqueue(PQ, newprocess, newprocess->remainingtime); // if its remaining time heiher the put it in ready queue
-    }
   }
-  else if (runningProcess == NULL)
-  {
+  else
     STRNenqueue(PQ, newprocess, newprocess->remainingtime);
-  }
 }
+
 
 void HPF()
 {
@@ -166,8 +169,8 @@ void HPF()
 void HPFaddprocess()
 {
   process *newprocess = initProcess();
-
-  if (runningProcess == NULL)
+  HPFenqueue(PQ, newprocess, newprocess->priority);
+  if(runningProcess == NULL)
   {
     kill(newprocess->realPid, SIGCONT);
     if (newprocess->state == "stopped"){
@@ -180,12 +183,8 @@ void HPFaddprocess()
     }
     runningProcess = newprocess;
   }
-  else
-  {
-    HPFenqueue(PQ, newprocess, newprocess->priority); // if it will not run directly then put it in the ready queue
-  }
-  PQdisplay(PQ);
 }
+
 
 int forkNewProcess(char *runnungtime, char *arrivaltime, int run)
 {
@@ -221,10 +220,10 @@ void getAlgorithm()
     HPF();
     break;
   case 2:
-    printf("You are in SRTN mode\n");
-    PQ = createPriorityQueue();
-    STRN();
-    break;
+        printf ("You are in SRTN mode\n");
+       // PQ = createPriorityQueue();
+        STRN();
+        break;
   case 3:
     printf("You are in RR mode\n");
     Q = createQueue();
@@ -247,26 +246,6 @@ void connectWithGenerator()
 
 ////////////////////////////////////////////
 
-void addProcess()
-{
-  process *newprocess = createProcess(SCH_message.arrivedProcess.id, SCH_message.arrivedProcess.priority,
-                                      SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.runningtime);
-
-  char runnungtimearg[20]; // a string containing the raunnumg time to be sent as argument to the forked process
-  sprintf(runnungtimearg, "%d", newprocess->runningtime);
-
-  char arrivaltime[20]; // same for arrival time (msh 3aref hn7tagha wla la)
-  sprintf(arrivaltime, "%d", newprocess->arrivaltime);
-
-  int pid = forkNewProcess(runnungtimearg, arrivaltime, newprocess->runningtime); // create a real process
-  newprocess->realPid = pid;                                                      // set the real id of the forked process
-
-  process *currentrunning = NULL;
-
-  normalQenqueue(Q, newprocess);
-
-}
-
 void sigtermhandler(int signum)
 {
   free(Q);
@@ -275,22 +254,15 @@ void sigtermhandler(int signum)
   signal(SIGTERM, sigtermhandler);
 }
 
+
 void finishedPhandler(int signum)
 {
   process *finishedprocess = NULL;
 
-  if (algorithm == 2 || algorithm == 1)
-  {
-    finishedprocess = runningProcess;
-    runningProcess = NULL;
-    printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
-  }
-  else
-  {
-    finishedprocess = dequeue(Q);
-    // if (!isEmpty(Q))
-    //   kill (peek(Q)->realPid, SIGCONT); // start executing the next process
-  }
+  finishedprocess = PQdequeue(PQ);
+  runningProcess = NULL;
+  printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
+  
   free(finishedprocess);
   processCount--;
   signal(SIGUSR1, finishedPhandler);
@@ -356,19 +328,19 @@ process *initProcess()
   return newprocess;
 }
 
-void outputFileinit(){
-  schedulerLog = fopen("scheduler.log", "w");
-  if (schedulerLog == NULL){
-    perror("Error opening log file");
-    exit(-1);
-  }
-  fprintf(schedulerLog, "#At time x process y state arr w total z remain y wait k\n");
-  schedulerPref = fopen("scheduler.pref", "w");
-  if (schedulerPref == NULL){
-    perror("Error opening pref file");
-    exit(-1);
-  }
-}
+// void outputFileinit(){
+//   schedulerLog = fopen("scheduler.log", "w");
+//   if (schedulerLog == NULL){
+//     perror("Error opening log file");
+//     exit(-1);
+//   }
+//   fprintf(schedulerLog, "#At time x process y state arr w total z remain y wait k\n");
+//   schedulerPref = fopen("scheduler.pref", "w");
+//   if (schedulerPref == NULL){
+//     perror("Error opening pref file");
+//     exit(-1);
+//   }
+// }
 
 void outputFile(){
   float currentProcessCount = countQueue(allWTA);
