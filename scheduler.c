@@ -71,8 +71,6 @@ int main(int argc, char *argv[])
  // allWTA = createQueue();
 
   // TODO implement the scheduler :)
-
-  // create queue to recieve finished processes
   
   // outputFile();
   destroyClk(true);
@@ -136,7 +134,7 @@ void HPF()
       }
       if(!PQisEmpty(PQ) && runningProcess == NULL)
       {
-        runningProcess = PQdequeue(PQ);
+        runningProcess = PQpeek(PQ);
         runningProcess->lastRunningClk = getClk();
         kill(runningProcess->realPid, SIGCONT);
       }
@@ -147,17 +145,14 @@ void HPF()
 void HPFaddprocess()
 {
   process *newprocess = initProcess();
-
- if(runningProcess == NULL)
- {
-  kill(newprocess->realPid, SIGCONT);
-  runningProcess = newprocess;
- }
- else
- {
-  HPFenqueue(PQ, newprocess, newprocess->priority); // if it will not run directly then put it in the ready queue
- }
+  HPFenqueue(PQ, newprocess, newprocess->priority);
+  if(runningProcess == NULL)
+  {
+    kill(newprocess->realPid, SIGCONT);
+    runningProcess = newprocess;
+  }
 }
+
 
 int forkNewProcess(char *runnungtime, char *arrivaltime, int run)
 {
