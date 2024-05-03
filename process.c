@@ -1,31 +1,25 @@
 #include "Clock/headers.h"
 
-
-
 /* Modify this file as needed*/
-int turn_shmid; // to know if its their turn
-int *turn_shmaddr;
 int remainingtime;
 
 int prev, curr;
 
 void SIGCONThandler (int signum);
-void sigtstphandler(int signum);
-void waiting();
 
 int main(int agrc, char * argv[])
 {
     initClk();
     int runningtime = atoi(argv[1]);
     int arrivaltime = atoi(argv[2]);
+    signal(SIGCONT, SIGCONThandler);
 
     //TODO it needs to get the remaining time from somewhere
     //remainingtime = ??;
     remainingtime = runningtime;
-
+    // printf("Starting process with ID = %d - Remaining time = %d - Started at time = %d\n", getpid(), remainingtime, getClk());
 
     prev = getClk();
-    signal(SIGCONT, SIGCONThandler);
     while (remainingtime > 0 )
     {      
       curr = getClk();
@@ -52,9 +46,4 @@ void SIGCONThandler(int signum)
 {
  //printf("ID = %d\n", getpid());
  prev = curr = getClk();
-}
-
-void sigtstphandler(int signum)
-{
-  raise(SIGSTOP);
 }
