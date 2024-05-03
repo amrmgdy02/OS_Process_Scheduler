@@ -127,6 +127,38 @@ void freePriorityQueue(PriorityQueue* pq) {
     free(pq);
 }
 
+void PQremove(PriorityQueue* pq, process* proc) {
+    if (pq->front == NULL) {
+        printf("Queue is empty\n");
+        return;
+    }
+
+    // Special case: the process to remove is at the front of the queue
+    if (pq->front->nodeProcess == proc) {
+        PQnode* temp = pq->front;
+        pq->front = pq->front->next;
+        free(temp);
+        return;
+    }
+
+    // General case: find the process in the queue
+    PQnode* current = pq->front;
+    while (current->next != NULL && current->next->nodeProcess != proc) {
+        current = current->next;
+    }
+
+    // If the process was not found, return
+    if (current->next == NULL) {
+        printf("Process not found in queue\n");
+        return;
+    }
+
+    // Remove the process from the queue
+    PQnode* temp = current->next;
+    current->next = current->next->next;
+    free(temp);
+}
+
 
 
 // process * getwithid( PriorityQueue *pq,int pid)
