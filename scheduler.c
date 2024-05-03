@@ -73,20 +73,20 @@ int main(int argc, char *argv[])
   // TODO implement the scheduler :)
 
   // create queue to recieve finished processes
-  while (processCount > 0)
-  {
-    sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
-    if (sch_rec_val != -1){
+  // while (processCount > 0)
+  // {
+  //   sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
+  //   if (sch_rec_val != -1){
 
-      addProcess();
-      totalRunningTime+=SCH_message.arrivedProcess.runningtime;
-    }
-    if (!PQisEmpty(PQ) && runningProcess == NULL)
-    {
-      runningProcess = PQpeek(PQ);
-      kill(runningProcess->realPid, SIGCONT);
-    }
-  }
+  //     addProcess();
+  //     totalRunningTime+=SCH_message.arrivedProcess.runningtime;
+  //   }
+  //   if (!PQisEmpty(PQ) && runningProcess == NULL)
+  //   {
+  //     runningProcess = PQpeek(PQ);
+  //     kill(runningProcess->realPid, SIGCONT);
+  //   }
+  // }
   outputFile();
   destroyClk(true);
   kill(getppid(), SIGINT);
@@ -109,6 +109,12 @@ void STRN()
         {
           runningProcess = PQpeek(PQ);
           kill(runningProcess->realPid, SIGCONT);
+          if (runningProcess->remainingtime == runningProcess->runningtime){
+            runningProcess->arrivaltime=getClk();
+          printProcessState(schedulerLog, getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime-(runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime-(runningProcess->arrivaltime));
+          }else{
+          printProcessState(schedulerLog, getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime-(runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime-(runningProcess->arrivaltime));
+          }
           runningProcess->lastRunningClk = getClk();
         }
       }
@@ -123,17 +129,24 @@ void STRNaddprocess()
     runningProcess->remainingtime = runningProcess->remainingtime - (getClk()- runningProcess->lastRunningClk);
     runningProcess->lastRunningClk = getClk();
     STRNenqueue(PQ, newprocess, newprocess->remainingtime);
-   // printf("At time = %d - Process id = %d - Rem time = %d\n", getClk(), runningProcess->id, runningProcess->remainingtime);
     if (newprocess->remainingtime < runningProcess->remainingtime)
     {
       kill(runningProcess->realPid, SIGTSTP);
+      printProcessState(schedulerLog, getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime-(runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime-(runningProcess->arrivaltime));
       runningProcess = newprocess;
       kill(runningProcess->realPid, SIGCONT);
       runningProcess->lastRunningClk = getClk();
+      if (runningProcess->remainingtime == runningProcess->runningtime){
+                    runningProcess->arrivaltime=getClk();
+      printProcessState(schedulerLog, getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime-(runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime-(runningProcess->arrivaltime));
+      }else{
+      printProcessState(schedulerLog, getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime-(runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime-(runningProcess->arrivaltime));
+      }
     }
   }
-  else
+  else{
     STRNenqueue(PQ, newprocess, newprocess->remainingtime);
+    }
 }
 
 
@@ -328,19 +341,19 @@ process *initProcess()
   return newprocess;
 }
 
-// void outputFileinit(){
-//   schedulerLog = fopen("scheduler.log", "w");
-//   if (schedulerLog == NULL){
-//     perror("Error opening log file");
-//     exit(-1);
-//   }
-//   fprintf(schedulerLog, "#At time x process y state arr w total z remain y wait k\n");
-//   schedulerPref = fopen("scheduler.pref", "w");
-//   if (schedulerPref == NULL){
-//     perror("Error opening pref file");
-//     exit(-1);
-//   }
-// }
+void outputFileinit(){
+  schedulerLog = fopen("scheduler.log", "w");
+  if (schedulerLog == NULL){
+    perror("Error opening log file");
+    exit(-1);
+  }
+  fprintf(schedulerLog, "#At time x process y state arr w total z remain y wait k\n");
+  schedulerPref = fopen("scheduler.pref", "w");
+  if (schedulerPref == NULL){
+    perror("Error opening pref file");
+    exit(-1);
+  }
+}
 
 void outputFile(){
   float currentProcessCount = countQueue(allWTA);
