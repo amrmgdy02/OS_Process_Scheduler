@@ -110,11 +110,14 @@ void STRN()
       if (runningProcess->remainingtime == runningProcess->runningtime)
       {
         runningProcess->starttime = getClk();
-        printProcessState(schedulerLog, getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime - (runningProcess->arrivaltime));
+        runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime)
+        printProcessState(schedulerLog, getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       }
       else
       {
-        printProcessState(schedulerLog, getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime - (runningProcess->arrivaltime));
+        int tempTime = getClk()-runningProcess->laststoptime;
+        runningProcess->waitingtime+=tempTime;
+        printProcessState(schedulerLog, getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       }
       runningProcess->lastRunningClk = getClk();
     }
@@ -133,18 +136,22 @@ void STRNaddprocess()
     if (newprocess->remainingtime < runningProcess->remainingtime)
     {
       kill(runningProcess->realPid, SIGTSTP);
-      printProcessState(schedulerLog, getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime - (runningProcess->arrivaltime));
+      printProcessState(schedulerLog, getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
+      runningProcess->laststoptime = getClk();
       runningProcess = newprocess;
       kill(runningProcess->realPid, SIGCONT);
       runningProcess->lastRunningClk = getClk();
       if (runningProcess->remainingtime == runningProcess->runningtime)
       {
         runningProcess->starttime = getClk();
-        printProcessState(schedulerLog, getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime - (runningProcess->arrivaltime));
+        runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
+        printProcessState(schedulerLog, getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       }
       else
       {
-        printProcessState(schedulerLog, getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->starttime - (runningProcess->arrivaltime));
+        int tempTime = getClk()-runningProcess->laststoptime;
+        runningProcess->waitingtime+=tempTime;
+        printProcessState(schedulerLog, getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       }
     }
   }

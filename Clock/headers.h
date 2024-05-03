@@ -34,6 +34,8 @@ typedef struct process
     int lastRunningClk;
     int starttime;
     char state[10];
+    int laststoptime;
+    int waitingtime;
 } process;
 
 // Function to create a new process node
@@ -54,6 +56,8 @@ process *createProcess(int processID, int priority, int arrivaltime, int running
     newProcess->lastRunningClk = arrivaltime;
     strcpy(newProcess->state, "started");
     newProcess->starttime = arrivaltime;
+    newProcess->laststoptime = arrivaltime;
+    newProcess->waitingtime=0;
 
     return newProcess;
 }
