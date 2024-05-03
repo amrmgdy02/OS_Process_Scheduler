@@ -1,6 +1,7 @@
 #include "DataStructures/PriorityQueue.h"
 #include <sys/file.h>
 #include <math.h>
+// #include "DataStructures/Queuebasic.h"
 
 PriorityQueue *PQ = NULL;
 Queue *Q = NULL;
@@ -8,7 +9,7 @@ Queue *finishedQueue = NULL;
 
     int TA;
     int WTA;
-Queue *allWTA = NULL;
+// intQueue *allWTA = NULL;
 
 // set to zero when it receives a termination signal from a process
 int flag = 1;
@@ -16,7 +17,7 @@ int quantum;
 
 int processCount; // to check if all processes finished or other processes were not sent yet
 int algorithm;
-
+int currentProcessCount;
 key_t sch_key_id;
 int sch_rec_val, sch_msgq_id;
 struct msgbuff SCH_message;
@@ -64,13 +65,14 @@ int main(int argc, char *argv[])
   // signal(SIGUSR2, processTerminated); // to handle the termination of a process
   algorithm = atoi(argv[1]);
   processCount = atoi(argv[2]);
+  currentProcessCount=processCount;
   quantum = atoi(argv[3]);
   finishedQueue = createQueue();
   connectWithGenerator();
 
   getAlgorithm();
 
-  allWTA = createQueue();
+  // allWTA = intcreateQueue();
 
   // TODO implement the scheduler :)
 
@@ -283,13 +285,13 @@ void finishedPhandler(int signum)
     runningProcess = NULL;
     finishedprocess = PQdequeue(PQ);
     printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
-    schedulerLog = fopen("scheduler.log", "w");
-    if (schedulerLog == NULL)
-    {
-      perror("Error opening log file");
-      exit(-1);
-    }
-    printProcessFinish(schedulerLog, getClk(), finishedprocess->id, "finished", finishedprocess->arrivaltime, finishedprocess->runningtime - (finishedprocess->remainingtime), finishedprocess->remainingtime, finishedprocess->waitingtime);
+    // schedulerLog = fopen("scheduler.log", "w");
+    // if (schedulerLog == NULL)
+    // {
+    //   perror("Error opening log file");
+    //   exit(-1);
+    // }
+    //printProcessFinish(schedulerLog, getClk(), finishedprocess->id, "finished", finishedprocess->arrivaltime, finishedprocess->runningtime - (finishedprocess->remainingtime), finishedprocess->remainingtime, finishedprocess->waitingtime);
     
     free(finishedprocess);
     processCount--;
@@ -405,46 +407,51 @@ process *initProcess()
 
 void outputFile()
 {
-    schedulerPref = fopen("scheduler.pref", "w");
+    //schedulerPref = fopen("scheduler.pref", "w");
 
-    float currentProcessCount = countQueue(allWTA);
+    // float currentProcessCount = intcountQueue(allWTA);
     float avgWTA = (float)totalWTA / currentProcessCount;
     float avgWaitingTime = (float)totalWaitingTime / currentProcessCount;
     float CPUutilization = (float)totalRT / getClk() * 100;
-    int currentTime = 0, StandardDeviation = 0;
-    while (!isEmpty(allWTA))
-    {
-        currentTime = dequeue(allWTA);
-        StandardDeviation += pow(currentTime - avgWTA, 2);
-    }
-    StandardDeviation = sqrt(StandardDeviation / currentProcessCount);
+    float currentTime = 0, StandardDeviation = 0;
+    // while (!intisEmpty(allWTA))
+    // {
+    //     currentTime = intdequeue(allWTA);
+    //     StandardDeviation += pow(currentTime - avgWTA, 2);
+    // }
+    // StandardDeviation = sqrt(StandardDeviation / currentProcessCount);
 
-    schedulerPref = fopen("scheduler.pref", "w");
-    if (schedulerPref == NULL)
-    {
-        perror("Error opening pref file");
-        exit(-1);
-    }
+    // schedulerPref = fopen("scheduler.pref", "w");
+    // if (schedulerPref == NULL)
+    // {
+    //     perror("Error opening pref file");
+    //     exit(-1);
+    // }
 
-    fprintf(schedulerPref, "CPU Utilization = %.2f%% \nAvg WTA = %.2f\nAvg WT = %.2f\nStd WTA = %.2f\n",
-            CPUutilization, avgWTA, avgWaitingTime, StandardDeviation);
-
+    // fprintf(schedulerPref, "CPU Utilization = %.2f%% \nAvg WTA = %.2f\nAvg WT = %.2f\nStd WTA = %.2f\n",
+    //         CPUutilization, avgWTA, avgWaitingTime, StandardDeviation);
+// printf("CPU Utilization = %.2f%% \nAvg WTA = %.2f\nAvg WT = %.2f\nStd WTA = %.2f\n",
+//             CPUutilization, avgWTA, avgWaitingTime, StandardDeviation);
+printf("CPU Utilization = %.2f%% \nAvg WTA = %.2f\nAvg WT = %.2f\nStd WTA = %.2f\n",
+          CPUutilization, avgWTA, avgWaitingTime, 0);
     printf(" Output generated successfully\n");
 
-    fclose(schedulerPref);
+    //fclose(schedulerPref);
 }
 
 void printProcessState(FILE *schedulerLog, int time, int processID, char *state, int arrivalTime, int totalRunningTime, int remainingTime, int waitingTime)
 {
-  schedulerLog = fopen("scheduler.log", "a");
-  if (schedulerLog == NULL)
-  {
-    perror("Error opening log file");
-    exit(-1);
-  }
-  fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",
+  //schedulerLog = fopen("scheduler.log", "a");
+  // if (schedulerLog == NULL)
+  // {
+  //   perror("Error opening log file");
+  //   exit(-1);
+  // }
+  // fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",
+  //         time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
+  printf("#At time %d process %d %s arr %d total %d remain %d wait %d\n",
           time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
-  fclose("scheduler.log");
+  //fclose("scheduler.log");
 }
 
 
@@ -460,12 +467,15 @@ void printProcessState(FILE *schedulerLog, int time, int processID, char *state,
 
 void printProcessFinish(FILE *schedulerLog, int time, int processID, char *state, int arrivalTime, int totalRunningTime, int remainingTime, int waitingTime)
 {
-    schedulerLog = fopen("scheduler.log", "a");
+    //schedulerLog = fopen("scheduler.log", "a");
 
     int TA = time - arrivalTime;
     float WTA = (float)TA / (float)totalRunningTime;
 
-    fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d TA %d WTA %.2f\n",
+    // fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d TA %d WTA %.2f\n",
+    //         time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime, TA, WTA);
+
+    printf("#At time %d process %d %s arr %d total %d remain %d wait %d TA %d WTA %.2f\n",
             time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime, TA, WTA);
-        fclose("scheduler.log");
+        //fclose("scheduler.log");
 }
