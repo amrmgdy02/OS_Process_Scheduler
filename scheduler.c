@@ -12,6 +12,7 @@ Queue *allWTA = NULL;
 
 // set to zero when it receives a termination signal from a process
 int flag = 1;
+int quantum;
 
 int processCount; // to check if all processes finished or other processes were not sent yet
 int algorithm;
@@ -62,6 +63,7 @@ int main(int argc, char *argv[])
   // signal(SIGUSR2, processTerminated); // to handle the termination of a process
   algorithm = atoi(argv[1]);
   processCount = atoi(argv[2]);
+  quantum = atoi(argv[3]);
   finishedQueue = createQueue();
   connectWithGenerator();
 
