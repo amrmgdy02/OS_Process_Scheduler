@@ -59,8 +59,10 @@ int main(int argc, char *argv[])
 
   signal(SIGTERM, sigtermhandler);   // to free the allocated memory
   signal(SIGUSR1, finishedPhandler); // to recieve that a process has finished its execution
-  schedulerLog=fopen("scheduler.log", "a+");
-  schedulerPref=fopen("scheduler.pref", "a+");
+  //schedulerLog=fopen("scheduler.log", "a+");
+  schedulerLog=fopen("scheduler.log", "w");
+  //schedulerPref=fopen("scheduler.pref", "a+");
+  schedulerPref=fopen("scheduler.pref", "w");
   algorithm = atoi(argv[1]);
   processCount = atoi(argv[2]);
   currentProcessCount = processCount;
@@ -74,8 +76,8 @@ int main(int argc, char *argv[])
   // TODO implement the scheduler :)
   outputFile();
   destroyClk(true);
-  fclose("scheduler.log");
-  fclose("scheduler.pref");
+  fclose(schedulerLog);
+  fclose(schedulerPref);
   kill(getppid(), SIGINT);
   return 0;
 }
@@ -98,13 +100,13 @@ void STRN()
       {
         runningProcess->starttime = getClk();
         runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
-        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
+        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
         }
       else
       {
         int tempTime = getClk()-runningProcess->laststoptime;
         runningProcess->waitingtime+=tempTime;
-      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       }
       runningProcess->lastRunningClk = getClk();
     }
@@ -123,7 +125,7 @@ void STRNaddprocess()
     if (newprocess->remainingtime < runningProcess->remainingtime)
     {
       kill(runningProcess->realPid, SIGTSTP);
-      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       runningProcess->laststoptime = getClk();
       runningProcess = newprocess;
       kill(runningProcess->realPid, SIGCONT);
@@ -132,13 +134,13 @@ void STRNaddprocess()
       {
         runningProcess->starttime = getClk();
         runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
-      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       }
       else
       {
         int tempTime = getClk()-runningProcess->laststoptime;
         runningProcess->waitingtime+=tempTime;
-      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       }
     }
   }
@@ -163,7 +165,7 @@ void HPF()
       runningProcess = PQpeek(PQ);
         runningProcess->starttime = getClk();
         runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
-      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       runningProcess->lastRunningClk = getClk();
       kill(runningProcess->realPid, SIGCONT);
     }
@@ -311,13 +313,13 @@ void RRScheduler(int quantum)
       {
         runningProcess->starttime = getClk();
         runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
-      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       }
       else
       {
         int tempTime = getClk()-runningProcess->laststoptime;
         runningProcess->waitingtime+=tempTime;
-      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       }
       kill(runningProcess->realPid, SIGCONT);
       
@@ -347,19 +349,19 @@ void RRScheduler(int quantum)
       if (flag)
       {
       kill(runningProcess->realPid, SIGSTOP);
-      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
       runningProcess->laststoptime = getClk();
         normalQenqueue(Q, runningProcess);
       }
       else
       {
-    int TA = getClk() - finishedprocess->arrivaltime;
-  float WTA = (float)TA / (float)finishedprocess->runningtime;
-  fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), finishedprocess->id, "finished", finishedprocess->arrivaltime, finishedprocess->runningtime, 0, finishedprocess->waitingtime, TA, WTA);
+    int TA = getClk() - runningProcess->arrivaltime;
+  float WTA = (float)TA / (float)runningProcess->runningtime;
+  fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), runningProcess->id, "finished", runningProcess->arrivaltime, runningProcess->runningtime, 0, runningProcess->waitingtime, TA, WTA);
       allWTA[processCount-1]=WTA;
   totalWTA += WTA;
-  totalWaitingTime += finishedprocess->waitingtime;
-totalRT += finishedprocess->runningtime;
+  totalWaitingTime += runningProcess->waitingtime;
+totalRT += runningProcess->runningtime;
         free(runningProcess);
         processCount--;
         flag = 1;
