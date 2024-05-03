@@ -1,15 +1,16 @@
 #include "DataStructures/PriorityQueue.h"
 #include <sys/file.h>
 #include <math.h>
-#include "DataStructures/Queuebasic.h"
+#include <stdio.h>
+
 
 PriorityQueue *PQ = NULL;
 Queue *Q = NULL;
 Queue *finishedQueue = NULL;
 
 int TA;
-int WTA;
-intQueue *allWTA = NULL;
+float WTA;
+float *allWTA;
 
 // set to zero when it receives a termination signal from a process
 int flag = 1;
@@ -26,7 +27,7 @@ int children_shmid;
 int *children_shmaddr;
 
 int totalWaitingTime = 0;
-int totalWTA = 0;
+float totalWTA = 0;
 int totalRT = 0;
 
 FILE *schedulerLog , *schedulerPref;
@@ -60,34 +61,19 @@ int main(int argc, char *argv[])
   signal(SIGTERM, sigtermhandler);    // to free the allocated memory
   signal(SIGUSR1, finishedPhandler);  // to recieve that a process has finished its execution
   // signal(SIGUSR2, processTerminated); // to handle the termination of a process
+  schedulerLog=fopen("scheduler.log", "a+");
+  schedulerPref=fopen("scheduler.pref", "a+");
   algorithm = atoi(argv[1]);
   processCount = atoi(argv[2]);
   currentProcessCount = processCount;
   quantum = atoi(argv[3]);
+  allWTA = malloc(currentProcessCount * sizeof(float));
   finishedQueue = createQueue();
   connectWithGenerator();
 
   getAlgorithm();
 
-  allWTA = intcreateQueue();
-
   // TODO implement the scheduler :)
-
-  // create queue to recieve finished processes
-  // while (processCount > 0)
-  // {
-  //   sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
-  //   if (sch_rec_val != -1){
-
-  //     addProcess();
-  //     totalRunningTime+=SCH_message.arrivedProcess.runningtime;
-  //   }
-  //   if (!PQisEmpty(PQ) && runningProcess == NULL)
-  //   {
-  //     runningProcess = PQpeek(PQ);
-  //     kill(runningProcess->realPid, SIGCONT);
-  //   }
-  // }
   outputFile();
   destroyClk(true);
   kill(getppid(), SIGINT);
@@ -97,7 +83,6 @@ int main(int argc, char *argv[])
 void STRN()
 {
   PQ = createPriorityQueue();
-  int prev = getClk();
   while (processCount > 0)
   {
     sch_rec_val = msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), !IPC_NOWAIT);
@@ -113,13 +98,13 @@ void STRN()
       {
         runningProcess->starttime = getClk();
         runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
-        printProcessState(schedulerLog, getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
-      }
+        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
+        }
       else
       {
         int tempTime = getClk()-runningProcess->laststoptime;
         runningProcess->waitingtime+=tempTime;
-        printProcessState(schedulerLog, getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
       }
       runningProcess->lastRunningClk = getClk();
     }
@@ -138,7 +123,7 @@ void STRNaddprocess()
     if (newprocess->remainingtime < runningProcess->remainingtime)
     {
       kill(runningProcess->realPid, SIGTSTP);
-      printProcessState(schedulerLog, getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
       runningProcess->laststoptime = getClk();
       runningProcess = newprocess;
       kill(runningProcess->realPid, SIGCONT);
@@ -147,13 +132,13 @@ void STRNaddprocess()
       {
         runningProcess->starttime = getClk();
         runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
-        printProcessState(schedulerLog, getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
       }
       else
       {
         int tempTime = getClk()-runningProcess->laststoptime;
         runningProcess->waitingtime+=tempTime;
-        printProcessState(schedulerLog, getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
+      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingTime, runningProcess->waitingTime);
       }
     }
   }
@@ -236,12 +221,10 @@ void getAlgorithm()
   {
   case 1:
     printf("You are in HPF mode\n");
-    // PQ = createPriorityQueue();
     HPF();
     break;
   case 2:
     printf("You are in SRTN mode\n");
-    // PQ = createPriorityQueue();
     STRN();
     break;
   case 3:
@@ -434,21 +417,6 @@ printf("CPU Utilization = %.2f%% \nAvg WTA = %.2f\nAvg WT = %.2f\nStd WTA = %.2f
     printf(" Output generated successfully\n");
 
     //fclose(schedulerPref);
-}
-
-void printProcessState(FILE *schedulerLog, int time, int processID, char *state, int arrivalTime, int totalRunningTime, int remainingTime, int waitingTime)
-{
-  //schedulerLog = fopen("scheduler.log", "a");
-  // if (schedulerLog == NULL)
-  // {
-  //   perror("Error opening log file");
-  //   exit(-1);
-  // }
-  // fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n",
-  //         time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
-  printf("#At time %d process %d %s arr %d total %d remain %d wait %d\n",
-          time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
-  //fclose("scheduler.log");
 }
 
 
