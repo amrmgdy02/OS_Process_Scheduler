@@ -297,7 +297,7 @@ void finishedPhandler(int signum)
   {
     // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
     // the scheduler should remove the process from the queue and free its memory
-    flag = 1;
+    flag = 0;
   }
   signal(SIGUSR1, finishedPhandler);
 }
