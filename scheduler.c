@@ -173,7 +173,7 @@ void HPF()
     }
     if (!PQisEmpty(PQ) && runningProcess == NULL)
     {
-      runningProcess = PQdequeue(PQ);
+      runningProcess = PQpeek(PQ);
       runningProcess->lastRunningClk = getClk();
       kill(runningProcess->realPid, SIGCONT);
     }
@@ -185,11 +185,11 @@ void HPFaddprocess()
 {
   process *newprocess = initProcess();
   HPFenqueue(PQ, newprocess, newprocess->priority);
-  if (runningProcess == NULL)
-  {
-    kill(newprocess->realPid, SIGCONT);
-    runningProcess = newprocess;
-  }
+  // if (runningProcess == NULL)
+  // {
+  //   kill(newprocess->realPid, SIGCONT);
+  //   runningProcess = newprocess;
+  // }
 }
 
 int forkNewProcess(char *runnungtime, char *arrivaltime, int run)
