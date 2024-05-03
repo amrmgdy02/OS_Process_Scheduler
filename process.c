@@ -6,6 +6,9 @@
 int turn_shmid; // to know if its their turn
 int *turn_shmaddr;
 int remainingtime;
+int starttime;
+int waitingtime;
+char state[10];
 
 void SIGCONThandler (int signum);
 void sigtstphandler(int signum);
@@ -17,6 +20,7 @@ int main(int agrc, char * argv[])
     signal(SIGCONT, SIGCONThandler);
     int runningtime = atoi(argv[1]);
     int arrivaltime = atoi(argv[2]);
+    state = "started";
 
     //TODO it needs to get the remaining time from somewhere
     //remainingtime = ??;
@@ -35,6 +39,7 @@ int main(int agrc, char * argv[])
       //    printf("Process ID = %d - Remaining time = %d - Current time = %d\n", getpid(), remainingtime, getClk());
         }
       }
+          state = "finished";
    // printf("Process with pid = %d - Finish time = %d\n",getpid(), prev);
     kill(getppid(), SIGUSR1);
     destroyClk(false);

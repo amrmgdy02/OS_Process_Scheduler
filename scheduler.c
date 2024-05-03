@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 
       addProcess();
       totalRunningTime+=SCH_message.arrivedProcess.runningtime;
-}
+    }
     if (!PQisEmpty(PQ) && runningProcess == NULL)
     {
       runningProcess = PQpeek(PQ);
@@ -147,6 +147,15 @@ void HPF()
     if (!PQisEmpty(PQ) && runningProcess == NULL)
     {
       runningProcess = PQdequeue(PQ);
+      if (runningProcess->state == "stopped"){
+      printProcessState(schedulerLog, getClk(), runningProcess->id, runningProcess->state, runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
+      runningProcess->state = "resumed";
+    }
+    if (newprocess->state == "started"){
+      printProcessState(schedulerLog, getClk(), runningProcess->id, runningProcess->state, runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
+      newprocess->state = "stopped";
+      newprocess->starttime = getClk();
+    }
       runningProcess->lastRunningClk = getClk();
       kill(runningProcess->realPid, SIGCONT);
     }
@@ -161,6 +170,14 @@ void HPFaddprocess()
   if (runningProcess == NULL)
   {
     kill(newprocess->realPid, SIGCONT);
+    if (newprocess->state == "stopped"){
+      newprocess->state = "resumed";
+    }
+    printProcessState(schedulerLog, getClk(), newprocess->id, newprocess->state, newprocess->arrivaltime, newprocess->runningtime, newprocess->remainingtime, 0);
+    if (newprocess->state == "started"){
+      newprocess->state = "stopped";
+      newprocess->starttime = getClk();
+    }
     runningProcess = newprocess;
   }
   else
@@ -247,6 +264,7 @@ void addProcess()
   process *currentrunning = NULL;
 
   normalQenqueue(Q, newprocess);
+
 }
 
 void sigtermhandler(int signum)
@@ -367,4 +385,8 @@ void outputFile(){
   printf(" Output generated seccussfully\n");
   fclose(schedulerLog);
   fclose(schedulerPref);
+}
+void printProcessState(FILE *schedulerLog, int time, int processID, char *state, int arrivalTime, int totalRunningTime, int remainingTime, int waitingTime) {
+    fprintf(schedulerLog, "#At time %d process %d state %s arr %d w total %d remain %d wait %d\n", 
+            time, processID, state, arrivalTime, totalRunningTime, remainingTime, waitingTime);
 }
