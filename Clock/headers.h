@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <string.h>
+
+///////////////////////////////////////////////////////////////////////////////////
 
 typedef short bool;
 #define true 1
@@ -29,14 +32,18 @@ typedef struct process
     int id;
     int realPid;
     int lastRunningClk;
-    int finishtime;
+    int starttime;
+    char state[10];
+    int laststoptime;
+    int waitingtime;
 } process;
 
-
 // Function to create a new process node
-process* createProcess(int processID, int priority, int arrivaltime, int runningtime) {
-    process *newProcess = (process*)malloc(sizeof(process));
-    if (newProcess == NULL) {
+process *createProcess(int processID, int priority, int arrivaltime, int runningtime)
+{
+    process *newProcess = (process *)malloc(sizeof(process));
+    if (newProcess == NULL)
+    {
         printf("Memory allocation failed\n");
         exit(EXIT_FAILURE);
     }
@@ -45,13 +52,15 @@ process* createProcess(int processID, int priority, int arrivaltime, int running
     newProcess->arrivaltime = arrivaltime;
     newProcess->runningtime = runningtime;
     newProcess->remainingtime = runningtime; // id got from input and will be printed in output.  ex: 1,2,3,..
-    newProcess->realPid = 0;  // pid for scheduler to send signals to processes if needed 
+    newProcess->realPid = 0;                 // pid for scheduler to send signals to processes if needed
     newProcess->lastRunningClk = arrivaltime;
-    
+    strcpy(newProcess->state, "started");
+    newProcess->starttime = arrivaltime;
+    newProcess->laststoptime = arrivaltime;
+    newProcess->waitingtime=0;
 
     return newProcess;
 }
-
 
 struct msgbuff
 {
@@ -59,8 +68,11 @@ struct msgbuff
     process arrivedProcess;
 };
 
-
-
+struct sch_proc_buff
+{
+    long mtype;
+    int currtime;
+};
 
 ///==============================
 // don't mess with this variable//

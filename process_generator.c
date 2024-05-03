@@ -1,4 +1,4 @@
-//#include "./Clock/headers.h"
+// #include "./Clock/headers.h"
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
@@ -11,18 +11,16 @@
 #include "DataStructures/PriorityQueue.h"
 
 ////////////////////////////////
-Queue * processesQueue;
+Queue *processesQueue;
 struct msgbuff processmsg;
 
-
-
-void setProcessParameters (int id,int arr, int runningtime, int pri);
-int createClockProcess ();
-int createSchedulerProcess ();
+void setProcessParameters(int id, int arr, int runningtime, int pri);
+int createClockProcess();
+int createSchedulerProcess();
 
 int msgq_id;
-char algo[2]; // string to be sent to shceduler as argument
-char processesCount[2]; 
+char algo[2]; // string to be sent to scheduler as argument
+char processesCount[2];
 char quantum[5];
 
 void clearResources(int);
@@ -38,7 +36,6 @@ int main(int argc, char *argv[])
 
     processmsg.mtype = 7; /* arbitrary value */
 
-
     // 1. Read the input files.
     // Open processes file
     file = fopen("processes.txt", "r");
@@ -49,20 +46,26 @@ int main(int argc, char *argv[])
         perror("Error opening file");
         exit(-1);
     }
-    // Skip the first line
-    fgets(line, sizeof(line), file);
 
     // Read process data from the file
     processesQueue = createQueue();
-    process * arrivedProcess = NULL;
-    while (fscanf(file, "%d %d %d %d", &id, &arrivalTime, &runningTime, &priority) == 4)
+    process *arrivedProcess = NULL;
+    while (fgets(line, sizeof(line), file) != NULL)
     {
-        arrivedProcess = createProcess(id, priority, arrivalTime,runningTime);
-        normalQenqueue(processesQueue, arrivedProcess);
-        printf("Process ID: %d, Arrival Time: %d, Running Time: %d, Priority: %d\n", id, arrivalTime, runningTime, priority);
-        processesNumber++;
+        // Check if the line starts with #
+        if (line[0] == '#')
+            continue; // Skip this line
+
+        // Read process data from the line
+        if (sscanf(line, "%d %d %d %d", &id, &arrivalTime, &runningTime, &priority) == 4)
+        {
+            arrivedProcess = createProcess(id, priority, arrivalTime, runningTime);
+            normalQenqueue(processesQueue, arrivedProcess);
+            printf("Process ID: %d, Arrival Time: %d, Running Time: %d, Priority: %d\n", id, arrivalTime, runningTime, priority);
+            processesNumber++;
+        }
     }
-    sprintf (processesCount, "%d", processesNumber);
+    sprintf(processesCount, "%d", processesNumber);
 
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
     int algorithm;
@@ -91,11 +94,11 @@ int main(int argc, char *argv[])
     }
 
     printf("Chosen algorithm: %d\n", algorithm);
-    sprintf (algo, "%d", algorithm);
-   
+    sprintf(algo, "%d", algorithm);
+
     // 3. Initiate and create the scheduler and clock processes.
 
-//////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
 
     key_t key_id;
     int send_val;
@@ -108,16 +111,15 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+    ///////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////
-   
     int clckID = createClockProcess();
     int schedulerID = createSchedulerProcess();
-   // printf("Scheduler id is: %d\n", schedulerID);
-    
-////////////////////////////////////////////////////////////////////////////////////////
+    // printf("Scheduler id is: %d\n", schedulerID);
 
- //   display(processesQueue);
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    //   display(processesQueue);
 
     // 4. Use this function after creating the clock process to initialize clock
     initClk();
@@ -128,46 +130,43 @@ int main(int argc, char *argv[])
 
     // TODO: Generation Main Loop
 
+    ///////////////////////////////////////////////////////////////
+    process *currp = peek(processesQueue);
 
-///////////////////////////////////////////////////////////////
-    process * currp = peek(processesQueue);
-
-    while (!isEmpty(processesQueue)) 
+    while (!isEmpty(processesQueue))
     {
         int currtime = getClk();
         if (currtime >= currp->arrivaltime)
         {
-        process * temp = dequeue(processesQueue);
-        currp = peek(processesQueue);
-        setProcessParameters(temp->id, temp->arrivaltime, temp->runningtime, temp->priority);   
-        processmsg.mtype = schedulerID;
-        send_val = msgsnd(msgq_id, &processmsg, sizeof(processmsg.arrivedProcess), !IPC_NOWAIT); 
-     //   kill (schedulerID, SIGUSR1);  
-        
-        if (send_val == -1) 
-        {
-            perror ("sending error: ");
-        }
-      //  else
-        //    printf("procees with priority: %d sent on queue\n", processmsg.arrivedProcess.priority);
+            process *temp = dequeue(processesQueue);
+            currp = peek(processesQueue);
+            setProcessParameters(temp->id, temp->arrivaltime, temp->runningtime, temp->priority);
+            processmsg.mtype = schedulerID;
+            send_val = msgsnd(msgq_id, &processmsg, sizeof(processmsg.arrivedProcess), !IPC_NOWAIT);
+            //   kill (schedulerID, SIGUSR1);
+
+            if (send_val == -1)
+            {
+                perror("sending error: ");
+            }
+            //  else
+            //    printf("procees with priority: %d sent on queue\n", processmsg.arrivedProcess.priority);
         }
     }
 
-//////////////////////////////////////////////////////////////////////////////////
-
+    //////////////////////////////////////////////////////////////////////////////////
 
     // 5. Create a data structure for processes and provide it with its parameters.
 
     // 6. Send the information to the scheduler at the appropriate time.
     // 7. Clear clock resources
 
-    while(true);
+    while (true)
+        ;
     destroyClk(true);
     msgctl(msgq_id, IPC_RMID, (struct msqid_ds *)0);
     kill(getpgrp(), SIGKILL);
 
-  
- 
     fclose(file);
     return 0;
 }
@@ -180,24 +179,26 @@ void clearResources(int signum)
     // TODO: Clears all resources in case of interruption
 }
 
-void setProcessParameters (int id,int arr, int runningtime, int pri) {
+void setProcessParameters(int id, int arr, int runningtime, int pri)
+{
     processmsg.arrivedProcess.id = id;
     processmsg.arrivedProcess.arrivaltime = arr;
     processmsg.arrivedProcess.priority = pri;
-    processmsg.arrivedProcess.runningtime = runningtime; 
+    processmsg.arrivedProcess.runningtime = runningtime;
     processmsg.arrivedProcess.remainingtime = runningtime;
 }
 
-int createClockProcess () {
+int createClockProcess()
+{
     int clckID = fork();
     if (clckID == -1)
     {
-		perror("error in fork");
+        perror("error in fork");
         exit(-1);
     }
     else if (clckID == 0)
     {
-        if (execl("./clk.out","bin/clk.out", NULL) == -1)
+        if (execl("./clk.out", "bin/clk.out", NULL) == -1)
         {
             perror("execl: ");
             exit(1);
@@ -206,22 +207,22 @@ int createClockProcess () {
     return clckID;
 }
 
-
-int createSchedulerProcess () {
+int createSchedulerProcess()
+{
 
     int schedulerID = fork();
     if (schedulerID == -1)
     {
-	 	perror("error in fork");
+        perror("error in fork");
         exit(-1);
     }
     else if (schedulerID == 0)
     {
-        if (execl("./scheduler.out","scheduler.out", algo, processesCount, quantum,NULL) == -1)
+        if (execl("./scheduler.out", "scheduler.out", algo, processesCount, quantum, NULL) == -1)
         {
-             perror("execl: ");
-             exit(1);
+            perror("execl: ");
+            exit(1);
         }
-     }
-     return schedulerID;
+    }
+    return schedulerID;
 }

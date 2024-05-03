@@ -101,3 +101,13 @@ void freeQueue(Queue* pq) {
     }
     free(pq);
 }
+
+int countQueue(Queue* queue) {
+    int count = 0;
+    QueueNode* current = queue->front;
+    while (current!= NULL) {
+        count++;
+        current = current->next;
+    }
+    return count;
+}
