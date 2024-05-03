@@ -45,7 +45,7 @@ int main(int agrc, char * argv[])
 
 void SIGCONThandler(int signum)
 {
-  printf("Process ID = %d Started running at time = %d\n", getpid(), getClk());
+ // printf("Process ID = %d Started running at time = %d\n", getpid(), getClk());
   signal(SIGCONT, SIGCONThandler);
    int prev = getClk();
  // printf("Start run ID: %d at time: %d and rem time = %d\n", getpid(), getClk(), remainingtime);

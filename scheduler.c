@@ -197,7 +197,7 @@ void getAlgorithm()
         break;
   case 2:
         printf ("You are in SRTN mode\n");
-        PQ = createPriorityQueue();
+     //   PQ = createPriorityQueue();
         STRN();
         break;
   case 3:
