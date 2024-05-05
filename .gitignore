@@ -1,7 +1,7 @@
 clk.out
 process_generator.out
 process.out
-scheduler.log
+./scheduler.log
 scheduler.out
 scheduler.perf
 test_generator.out
