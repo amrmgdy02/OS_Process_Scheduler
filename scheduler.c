@@ -203,15 +203,16 @@ int forkNewProcess(char *runnungtime)
   }
   else if (id == 0)
   {
-    if (execl("./process.out", "process.out", runnungtime, salgo, NULL) == -1)
+    char quan[2];
+    sprintf(quan, "%d", quantum);
+    if (execl("./process.out", "process.out", runnungtime, quan, NULL) == -1)
     {
       perror("execl: ");
       exit(1);
     }
   }
 
-  if (atoi(salgo) != 3)
-    kill(id, SIGTSTP); // stop the forked (except if the ready queue is empty) process untill its turn
+  kill(id, SIGTSTP); // stop the forked (except if the ready queue is empty) process untill its turn
 
   return id;
 }
@@ -359,50 +360,33 @@ void RRScheduler(int quantum)
       int counter = 0;
       received = 1;
 
-      printf("Process #%d started at time = %d\n", runningProcess->id, curr);
+      printf("Process %c started at time = %d\n", ('A' + (runningProcess->id - 1) ), curr);
 
-      while (counter < runtime)
-      {
-        curr = getClk();
-        if (curr != prev && received)
-        {
-          received = 0;
-          runningProcess->remainingtime -= 1;
-          kill(runningProcess->realPid, SIGCONT);
-          // printf("PID = %d, RT = %d, time = %d\n", runningProcess->realPid, runningProcess->remainingtime, curr);
-          counter++;
-          prev = curr;
-          // printf("waiting for signal \n");
-        }
-      }
+      kill(runningProcess->realPid, SIGCONT);
+      runningProcess->remainingtime -= runtime;
+      received = 0;
+
+      // printf("Waiting\n");
+      // Wait till you get a signal from the process that it received your signal
+      while (!received);
+      // printf("signaled\n");
+      
     }
 
     // This loop checks for the incoming processes, if there is no incoming processes, it will break and continue running the current process
     if (processCount > 0)
     {
-      // int lastID = -1;
+      usleep(1000);
       while ((msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), IPC_NOWAIT)) != -1)
       {
-        // if (lastID == SCH_message.arrivedProcess.id)
-        //   continue;
-
         printf("Received\n");
         process *newprocess = initProcess();
         normalQenqueue(Q, newprocess);
-
-        // lastID = newprocess->id;
       }
     }
 
     if (runningProcess)
     {
-
-      // printf("Waiting\n");
-      // Wait till you get a signal from the process that it received your signal
-      while (!received);
-
-      // printf("signaled\n");
-
       // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
       if (flag)
       {
@@ -426,7 +410,7 @@ void RRScheduler(int quantum)
         totalWaitingTime += runningProcess->waitingtime;
         totalRT += runningProcess->runningtime;
 
-        printf("Process with pid = %d finished at time = %d\n", runningProcess->realPid, getClk());
+        printf("%c finished at time = %d\n", ('A' + (runningProcess->id - 1) ), getClk());
         free(runningProcess);
         processCount--;
         flag = 1;
@@ -452,8 +436,8 @@ process *initProcess()
   char runnungtimearg[20]; // a string containing the raunnumg time to be sent as argument to the forked process
   sprintf(runnungtimearg, "%d", newprocess->runningtime);
 
-  char arrivaltime[20]; // same for arrival time (msh 3aref hn7tagha wla la)
-  sprintf(arrivaltime, "%d", newprocess->arrivaltime);
+  // char arrivaltime[20]; // same for arrival time (msh 3aref hn7tagha wla la)
+  // sprintf(arrivaltime, "%d", newprocess->arrivaltime);
 
   int pid = forkNewProcess(runnungtimearg); // create a real process
   newprocess->realPid = pid;                                                      // set the real id of the forked process
