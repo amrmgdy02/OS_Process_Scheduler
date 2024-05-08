@@ -55,7 +55,7 @@ void HPFenqueue(PriorityQueue* pq, process* newprocess, int priority) {
 }
 
 
-void STRNenqueue(PriorityQueue* pq, process* newprocess, int remtime) {
+void SRTNenqueue(PriorityQueue* pq, process* newprocess, int remtime) {
     // Create a new PQnode
     PQnode* newNode = (PQnode*)malloc(sizeof(PQnode));
     if (newNode == NULL) {
