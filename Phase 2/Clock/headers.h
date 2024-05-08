@@ -36,10 +36,11 @@ typedef struct process
     char state[10];
     int laststoptime;
     int waitingtime;
+    int memorySize;
 } process;
 
 // Function to create a new process node
-process *createProcess(int processID, int priority, int arrivaltime, int runningtime)
+process *createProcess(int processID, int priority, int arrivaltime, int runningtime, int memorySize)
 {
     process *newProcess = (process *)malloc(sizeof(process));
     if (newProcess == NULL)
@@ -54,6 +55,7 @@ process *createProcess(int processID, int priority, int arrivaltime, int running
     newProcess->remainingtime = runningtime; // id got from input and will be printed in output.  ex: 1,2,3,..
     newProcess->realPid = 0;                 // pid for scheduler to send signals to processes if needed
     newProcess->lastRunningClk = arrivaltime;
+    newProcess->memorySize = memorySize;
     strcpy(newProcess->state, "started");
     newProcess->starttime = arrivaltime;
     newProcess->laststoptime = arrivaltime;

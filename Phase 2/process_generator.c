@@ -57,11 +57,12 @@ int main(int argc, char *argv[])
             continue; // Skip this line
 
         // Read process data from the line
-        if (sscanf(line, "%d %d %d %d", &id, &arrivalTime, &runningTime, &priority) == 4)
+        if (sscanf(line, "%d %d %d %d %d", &id, &arrivalTime, &runningTime, &priority, &memorySize) == 5)
         {
-            arrivedProcess = createProcess(id, priority, arrivalTime, runningTime);
+            arrivedProcess = createProcess(id, priority, arrivalTime, runningTime, memorySize);
             normalQenqueue(processesQueue, arrivedProcess);
-            printf("Process ID: %d, Arrival Time: %d, Running Time: %d, Priority: %d\n", id, arrivalTime, runningTime, priority);
+            printf("Process ID: %d, Arrival Time: %d, Running Time: %d, Priority: %d, Memory Size: %d\n", id, arrivalTime, runningTime, priority, memorySize);
+            //attachTomemory(process);
             processesNumber++;
         }
     }
@@ -140,7 +141,7 @@ int main(int argc, char *argv[])
         {
             process *temp = dequeue(processesQueue);
             currp = peek(processesQueue);
-            setProcessParameters(temp->id, temp->arrivaltime, temp->runningtime, temp->priority);
+            setProcessParameters(temp->id, temp->arrivaltime, temp->runningtime, temp->priority, temp->memorySize);
             processmsg.mtype = schedulerID;
             send_val = msgsnd(msgq_id, &processmsg, sizeof(processmsg.arrivedProcess), !IPC_NOWAIT);
             //   kill (schedulerID, SIGUSR1);
@@ -179,13 +180,14 @@ void clearResources(int signum)
     // TODO: Clears all resources in case of interruption
 }
 
-void setProcessParameters(int id, int arr, int runningtime, int pri)
+void setProcessParameters(int id, int arr, int runningtime, int pri, int memorySize)
 {
     processmsg.arrivedProcess.id = id;
     processmsg.arrivedProcess.arrivaltime = arr;
     processmsg.arrivedProcess.priority = pri;
     processmsg.arrivedProcess.runningtime = runningtime;
     processmsg.arrivedProcess.remainingtime = runningtime;
+    processmsg.memorySize = memorySize;
 }
 
 int createClockProcess()
