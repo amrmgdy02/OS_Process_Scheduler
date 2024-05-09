@@ -23,6 +23,9 @@ char processesCount[2];
 char quantum[5];
 FILE *file;
 
+int clckID;
+int schedulerID;
+
 void clearResources(int);
 int main(int argc, char *argv[])
 {
@@ -108,8 +111,8 @@ int main(int argc, char *argv[])
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
-    int clckID = createClockProcess();
-    int schedulerID = createSchedulerProcess();
+    clckID = createClockProcess();
+    schedulerID = createSchedulerProcess();
 
     ////////////////////////////////////////////////////////////////////////////////////////
 

@@ -27,6 +27,7 @@ MemoryBlock* createMemoryBlock(int start, int size) {
     memBlock->left = NULL;
     memBlock->right = NULL;
     memBlock->parent = NULL;
+    printf("new memory block created - start : %d  end : %d\n", memBlock->start, memBlock->end);
     return memBlock;
 }
 
@@ -79,14 +80,14 @@ void freeMemory(MemoryBlock* memBlock, int processId) {
         memBlock->isEmpty = true;
         while (memBlock->parent) {
             memBlock->parent->split--;
-               if (memBlock->parent->left->isEmpty) {
-                    if(memBlock->parent->right->isEmpty){
-                    free(memBlock->parent->left);
-                    memBlock->parent->left = NULL;
-                    free(memBlock->parent->right);
-                    memBlock->parent->right = NULL;
-                    }
-                }
+            if (memBlock->parent->left->isEmpty && memBlock->parent->right->isEmpty) {
+                if (memBlock->parent->left != NULL)
+                  free(memBlock->parent->left);
+                if (memBlock->parent->right != NULL)
+                  free(memBlock->parent->right);
+                memBlock->parent->left = NULL;
+                memBlock->parent->right = NULL;
+            }
             memBlock = memBlock->parent;
         }
         return;
