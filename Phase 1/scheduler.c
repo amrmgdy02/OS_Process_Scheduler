@@ -44,23 +44,29 @@ process *runningProcess = NULL;
 
 /////// FUNCTIONS ////////
 
-int forkNewProcess(char *runtime);
-void getAlgorithm();
+
 void connectWithGenerator();
+void getAlgorithm();
+
 void finishedPhandler(int signum);
 void sigtermhandler(int signum);
+
+int forkNewProcess(char *runtime);
+process *initProcess();
+
+
 void processReceivedSignal(int signum);
 void RRScheduler(int quantum);
-process *initProcess();
-void outputFile();
 
 void SRTN();
 void SRTNaddprocess();
 
 void HPF();
 void HPFaddprocess();
+
 void printProcessState();
 void printProcessFinish();
+void outputFile();
 
 int main(int argc, char *argv[])
 {
@@ -117,16 +123,16 @@ void SRTN()
 
       ///////////////////////////// for message queue method //////////////////////////////
 
-      // if (runningProcess->runningtime != runningProcess->remainingtime)  // if it is the first run for the process, the handler is not attatched to the signal yet
-      // {
-      //   proc_buff.currtime = getClk();
-      //   proc_buff.mtype = runningProcess->realPid;
+      if (runningProcess->runningtime != runningProcess->remainingtime)  // if it is the first run for the process, the handler is not attatched to the signal yet
+      {
+        proc_buff.currtime = getClk();
+        proc_buff.mtype = runningProcess->realPid;
 
-      //   printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
+        printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
 
-      //   msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
+        msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
 
-      // }
+      }
 
       kill(runningProcess->realPid, SIGCONT);
 
@@ -161,15 +167,15 @@ void SRTNaddprocess()
     if (newprocess->remainingtime < runningProcess->remainingtime)
     {
 
-      printf("\nSWITCH!!!\n\n");
+     // printf("\nSWITCH!!!\n\n");
 
       ///////////////////////////// for message queue method //////////////////////////////
-      // proc_buff.currtime = getClk();
-      // proc_buff.mtype = runningProcess->realPid;
+      proc_buff.currtime = getClk();
+      proc_buff.mtype = runningProcess->realPid;
 
-      // printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
+     // printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
 
-      // msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
+      msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
 
 
       kill(runningProcess->realPid, SIGTSTP);

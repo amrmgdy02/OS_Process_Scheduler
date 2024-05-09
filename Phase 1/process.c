@@ -11,14 +11,12 @@ int remainingtime;
 int prev, curr, counter = 0;
 
 
-
-int last_run,last_stop;
-
+// int last_run;
 
 
 void SIGCONThandler(int signum);
-void srtnconthandler(int signum);
-void srtnstophandler(int signum);
+void SIGTSTPhandler(int signum);
+// void srtnconthandler(int signum);
 
 
 int main(int agrc, char *argv[])
@@ -27,19 +25,19 @@ int main(int agrc, char *argv[])
   int runningtime = atoi(argv[1]);
   int quantum     = atoi(argv[2]);
 
+  time_msgq_id = msgget(4000, 0666 | IPC_CREAT);
+  if (time_msgq_id == -1)
+  {
+        perror("Error in create");
+        exit(-1);
+  }
+ // else printf("PROCESS -- Message queue id = %d\n", time_msgq_id);
 
   signal(SIGCONT, SIGCONThandler);
+  signal(SIGTSTP, SIGTSTPhandler);
 
-  // time_msgq_id = msgget(4000, 0666 | IPC_CREAT);
-  // if (time_msgq_id == -1)
-  // {
-  //       perror("Error in create");
-  //       exit(-1);
-  // }
-  // else printf("PROCESS -- Message queue id = %d\n", time_msgq_id);
-  // time_buff.mtype = getpid();
   // signal(SIGCONT, srtnconthandler);
-  // signal(SIGTSTP, srtnstophandler);
+  
    
   remainingtime = runningtime;
   // printf("PID = %d initialized.\n", getpid());
@@ -48,8 +46,6 @@ int main(int agrc, char *argv[])
   prev = getClk();
 
   // last_run = getClk();
-
-
   // while(remainingtime > 0)
   // {
   //   if(getClk() > last_run )
@@ -94,32 +90,36 @@ void SIGCONThandler(int signum)
 {
   // printf("ID = %d\n", getpid());
   prev = curr = getClk();
-}
 
-void srtnconthandler(int signum)
-{
- if (msgrcv(time_msgq_id, &time_buff, sizeof(time_buff.currtime), getpid(), !IPC_NOWAIT) != -1)
- {
-    last_run = time_buff.currtime;
-    printf("PID = %d -- last_run = %d\n", getpid(), last_run);
- }
-}
-
-
-void srtnstophandler(int signum)
-{
-
-  if (msgrcv(time_msgq_id, &time_buff, sizeof(time_buff.currtime), getpid(), !IPC_NOWAIT) != -1)
+  if (msgrcv(time_msgq_id, &time_buff, sizeof(time_buff.currtime), getpid(), IPC_NOWAIT) != -1)  // for srtn
   {
+    prev = time_buff.currtime;
+    printf("PID = %d -- last_run = %d\n", getpid(), prev);
+  }
 
-    if (time_buff.currtime > last_run)
+}
+
+void SIGTSTPhandler(int signum)
+{
+
+  if (msgrcv(time_msgq_id, &time_buff, sizeof(time_buff.currtime), getpid(), IPC_NOWAIT) != -1)
+  {
+    if (time_buff.currtime > prev)
     {
       remainingtime--;
     }
-
-    last_stop = time_buff.currtime;
-    printf("PID = %d -- last_stop = %d\n", getpid(), time_buff.currtime);
+    printf("PID = %d -- last_stop = %d -- remaining time = %d\n", getpid(), time_buff.currtime, remainingtime);
   }
 
   raise(SIGSTOP);
 }
+
+
+// void srtnconthandler(int signum)
+// {
+//  if (msgrcv(time_msgq_id, &time_buff, sizeof(time_buff.currtime), getpid(), !IPC_NOWAIT) != -1)
+//  {
+//     last_run = time_buff.currtime;
+//     printf("PID = %d -- last_run = %d\n", getpid(), last_run);
+//  }
+// }
