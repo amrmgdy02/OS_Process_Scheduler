@@ -52,9 +52,9 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
         memBlock->isEmpty = false;
         return true;
     }
-    if(addProcess(memBlock->left, process->memorySize)){
+    if(addProcess(memBlock->left, process)){
         return true;
-    }else if(addProcess(memBlock->right, process->memorySize)){
+    }else if(addProcess(memBlock->right, process)){
         return true;
     }else if (memBlock-> split == 0){
         memBlock->processId = process->id;
