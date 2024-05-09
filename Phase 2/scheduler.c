@@ -160,6 +160,12 @@ void SRTNaddprocess()
   process *newprocess = initProcess();
   if (isEmpty(waitingQueue))
   {
+  if (addProcess(memory_block, newprocess) == false)
+  {
+    printf("memory allocation failed\n");
+    normalQenqueue(waitingQueue, newprocess);
+    return;
+  }
   if (runningProcess != NULL)
   {
     runningProcess->remainingtime = runningProcess->remainingtime - (getClk() - runningProcess->lastRunningClk);
@@ -364,8 +370,12 @@ void finishedPhandler(int signum)
 
     if (!isEmpty(waitingQueue))
     {
-      process *new = dequeue(waitingQueue);
-      SRTNenqueue(PQ, new, new->runningtime);
+      process *new = peek(waitingQueue);
+      if (addProcess(memory_block, new) == true)
+      {
+        dequeue(waitingQueue);
+        SRTNenqueue(PQ, new, new->runningtime);
+      }
     }
 
     processCount--;

@@ -60,8 +60,10 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
         memBlock->right->parent = memBlock;
     }
     if(addProcess(memBlock->left, process)){
+        printf("gggggg\n");
         return true;
     }else if(addProcess(memBlock->right, process)){
+        printf("gggggg\n");
         return true;
     }
     return false;
