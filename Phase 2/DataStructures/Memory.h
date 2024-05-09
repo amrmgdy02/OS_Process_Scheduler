@@ -34,15 +34,19 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
     if (memBlock == NULL || memBlock->isEmpty == false || memBlock->size < process->memorySize) {
         return false;
     }
-    if (memBlock->size == process->memorySize) {
+    if (memBlock->size == process->memorySize && memBlock->split == 0) {
         memBlock->processId = process->id;
         memBlock->isEmpty = false;
+        while (memBlock->parent){
+            memBlock->parent->split++;
+            memBlock->parent = memBlock->parent->parent;
+        }
         int currentTime = getClk();
         printf("At time %d allocated %d bytes for process %d from %d to %d\n",currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
         return true;
     }
     int newSize = memBlock->size / 2;
-    if(process->memorySize > newSize){       
+    if(process->memorySize > newSize && memBlock->split == 0){       
         memBlock->processId = process->id;
         memBlock->isEmpty = false;
         while (memBlock->parent){
