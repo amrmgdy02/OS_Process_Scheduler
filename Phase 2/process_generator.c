@@ -23,6 +23,7 @@ int msgq_id;
 char algo[2]; // string to be sent to scheduler as argument
 char processesCount[2];
 char quantum[5];
+FILE *file;
 
 void clearResources(int);
 int main(int argc, char *argv[])
@@ -30,7 +31,6 @@ int main(int argc, char *argv[])
     signal(SIGINT, clearResources);
     memoryBlock = createMemoryBlock(0, MEMORY_SIZE);
     
-    FILE *file;
     char line[256];
     int processesNumber = 0;
     int id, arrivalTime, runningTime, priority, memorySize;
