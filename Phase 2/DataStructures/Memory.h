@@ -27,7 +27,7 @@ MemoryBlock* createMemoryBlock(int start, int size) {
     memBlock->left = NULL;
     memBlock->right = NULL;
     memBlock->parent = NULL;
-    printf("new memory block created - start : %d  end : %d\n", memBlock->start, memBlock->end);
+    //printf("new memory block created - start : %d  end : %d\n", memBlock->start, memBlock->end);
     return memBlock;
 }
 
@@ -39,7 +39,7 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
         memBlock->processId = process->id;
         memBlock->isEmpty = false;
         while (memBlock->parent){
-            memBlock->parent->split++;
+            memBlock->parent->split+=1;
             memBlock->parent = memBlock->parent->parent;
         }
         int currentTime = getClk();
@@ -47,11 +47,11 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
         return true;
     }
     int newSize = memBlock->size / 2;
-    if(process->memorySize > newSize && memBlock->split == 0){       
+    if(process->memorySize > newSize && memBlock->split == 0){
         memBlock->processId = process->id;
         memBlock->isEmpty = false;
         while (memBlock->parent){
-            memBlock->parent->split++;
+            memBlock->parent->split+=1;
             memBlock->parent = memBlock->parent->parent;
         }
         int currentTime = getClk();
@@ -79,7 +79,7 @@ void freeMemory(MemoryBlock* memBlock, int processId) {
         memBlock->processId = -1;
         memBlock->isEmpty = true;
         while (memBlock->parent) {
-            memBlock->parent->split--;
+            memBlock->parent->split-=1;
             if (memBlock->parent->left->isEmpty && memBlock->parent->right->isEmpty) {
                 if (memBlock->parent->left != NULL)
                   free(memBlock->parent->left);
