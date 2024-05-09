@@ -40,6 +40,9 @@ int totalRT = 0;
 
 FILE *schedulerLog, *schedulerPref;
 
+Queue *waitingQueue;
+MemoryBlock *memory_block;
+
 process *runningProcess = NULL;
 
 /////// FUNCTIONS ////////
@@ -90,6 +93,11 @@ int main(int argc, char *argv[])
  }
  else printf("Message queue id = %d\n", proc_msgq_id);
 
+
+
+  waitingQueue = createQueue();
+  memory_block = createMemoryBlock(0, 1024);
+
   getAlgorithm();
 
   // TODO implement the scheduler :)
@@ -116,14 +124,11 @@ void SRTN()
       runningProcess = PQpeek(PQ);
 
       ///////////////////////////// for message queue method //////////////////////////////
-
       if (runningProcess->runningtime != runningProcess->remainingtime)  // if it is the first run for the process, the handler is not attatched to the signal yet
       {
         proc_buff.currtime = getClk();
         proc_buff.mtype = runningProcess->realPid;
-
-        printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
-
+      //  printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
         msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
 
       }
@@ -153,6 +158,8 @@ void SRTN()
 void SRTNaddprocess()
 {
   process *newprocess = initProcess();
+  if (isEmpty(waitingQueue))
+  {
   if (runningProcess != NULL)
   {
     runningProcess->remainingtime = runningProcess->remainingtime - (getClk() - runningProcess->lastRunningClk);
@@ -161,14 +168,14 @@ void SRTNaddprocess()
     if (newprocess->remainingtime < runningProcess->remainingtime)
     {
 
-      printf("\nSWITCH!!!\n\n");
+     // printf("\nSWITCH!!!\n\n");
 
       ///////////////////////////// for message queue method //////////////////////////////
 
       proc_buff.currtime = getClk();
       proc_buff.mtype = runningProcess->realPid;
 
-      printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
+     // printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
 
       msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
 
@@ -206,6 +213,11 @@ void SRTNaddprocess()
   else
   {
     SRTNenqueue(PQ, newprocess, newprocess->remainingtime);
+  }
+  }
+  else
+  {
+    normalQenqueue(waitingQueue, newprocess);
   }
 }
 
@@ -347,6 +359,14 @@ void finishedPhandler(int signum)
     totalRT += finishedprocess->runningtime;
     fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), finishedprocess->id, "finished", finishedprocess->arrivaltime, finishedprocess->runningtime, 0, finishedprocess->waitingtime, TA, WTA);
     fflush(schedulerLog);
+
+    freeMemory(memory_block, finishedprocess->id);
+
+    if (!isEmpty(waitingQueue))
+    {
+      process *new = dequeue(waitingQueue);
+      SRTNenqueue(PQ, new, new->runningtime);
+    }
 
     processCount--;
   }
