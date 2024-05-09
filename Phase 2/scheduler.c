@@ -2,14 +2,11 @@
 #include <sys/file.h>
 #include <math.h>
 #include <stdio.h>
+#define MEMORY_SIZE 1024
 
 PriorityQueue *PQ = NULL;
 Queue *Q = NULL;
 Queue *finishedQueue = NULL;
-
-int TA;
-float WTA;
-float *allWTA;
 
 
 int proc_msgq_id;
@@ -34,11 +31,8 @@ struct sch_proc_buff proc_buff;
 int children_shmid;
 int *children_shmaddr;
 
-int totalWaitingTime = 0;
-float totalWTA = 0;
-int totalRT = 0;
 
-FILE *schedulerLog, *schedulerPref;
+FILE *schedulerLog;
 
 Queue *waitingQueue;
 MemoryBlock *memory_block;
@@ -55,7 +49,6 @@ void sigtermhandler(int signum);
 void processReceivedSignal(int signum);
 void RRScheduler(int quantum);
 process *initProcess();
-void outputFile();
 
 void SRTN();
 void SRTNaddprocess();
@@ -72,16 +65,12 @@ int main(int argc, char *argv[])
   signal(SIGTERM, sigtermhandler);        // to free the allocated memory
   signal(SIGUSR1, finishedPhandler);      // to recieve that a process has finished its execution
   signal(SIGUSR2, processReceivedSignal); // to check if a process received a continue signal
-  // schedulerLog=fopen("scheduler.log", "a+");
   schedulerLog = fopen("scheduler.log", "w");
-  // schedulerPref=fopen("scheduler.pref", "a+");
-  schedulerPref = fopen("scheduler.pref", "w");
   algorithm = atoi(argv[1]);
   sprintf(salgo, "%d", algorithm);
   processCount = atoi(argv[2]);
   currentProcessCount = processCount;
   quantum = atoi(argv[3]);
-  allWTA = malloc(currentProcessCount * sizeof(float));
   finishedQueue = createQueue();
   connectWithGenerator();
 
@@ -96,15 +85,12 @@ int main(int argc, char *argv[])
 
 
   waitingQueue = createQueue();
-  memory_block = createMemoryBlock(0, 1024);
+  memory_block = createMemoryBlock(0, MEMORY_SIZE);
 
   getAlgorithm();
 
-  // TODO implement the scheduler :)
-  outputFile();
   destroyClk(true);
   fclose(schedulerLog);
-  fclose(schedulerPref);
   kill(getppid(), SIGINT);
   return 0;
 }
@@ -128,7 +114,6 @@ void SRTN()
       {
         proc_buff.currtime = getClk();
         proc_buff.mtype = runningProcess->realPid;
-      //  printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
         msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
 
       }
@@ -139,15 +124,11 @@ void SRTN()
       {
         runningProcess->starttime = getClk();
         runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
-        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
-        fflush(schedulerLog);
       }
       else
       {
         int tempTime = getClk() - runningProcess->laststoptime;
         runningProcess->waitingtime += tempTime;
-        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
-        fflush(schedulerLog);
       }
       runningProcess->lastRunningClk = getClk();
     }
@@ -188,10 +169,6 @@ void SRTNaddprocess()
 
       kill(runningProcess->realPid, SIGTSTP);
 
-
-      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
-      fflush(schedulerLog);
-
       runningProcess->laststoptime = getClk();
       runningProcess = newprocess;
 
@@ -202,17 +179,11 @@ void SRTNaddprocess()
       {
         runningProcess->starttime = getClk();
         runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
-
-        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
-        fflush(schedulerLog);
       }
       else
       {
         int tempTime = getClk() - runningProcess->laststoptime;
         runningProcess->waitingtime += tempTime;
-        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
-
-        fflush(schedulerLog);
       }
     }
   }
@@ -250,9 +221,6 @@ void HPF()
       runningProcess = PQpeek(PQ);
       runningProcess->starttime = getClk();
       runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
-      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
-
-      fflush(schedulerLog);
       runningProcess->lastRunningClk = getClk();
       kill(runningProcess->realPid, SIGCONT);
     }
@@ -359,14 +327,6 @@ void finishedPhandler(int signum)
     runningProcess = NULL;
     finishedprocess = PQdequeue(PQ);
     printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
-    int TA = getClk() - finishedprocess->arrivaltime;
-    float WTA = (float)TA / (float)finishedprocess->runningtime;
-    totalWTA += WTA;
-    allWTA[processCount - 1] = WTA;
-    totalWaitingTime += finishedprocess->waitingtime;
-    totalRT += finishedprocess->runningtime;
-    fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), finishedprocess->id, "finished", finishedprocess->arrivaltime, finishedprocess->runningtime, 0, finishedprocess->waitingtime, TA, WTA);
-    fflush(schedulerLog);
 
     freeMemory(memory_block, finishedprocess->id);
 
@@ -386,16 +346,6 @@ void finishedPhandler(int signum)
   {
     process *finishedprocess = runningProcess;
     printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
-    int TA = getClk() - finishedprocess->arrivaltime;
-    float WTA = (float)TA / (float)finishedprocess->runningtime;
-    fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), finishedprocess->id, "finished", finishedprocess->arrivaltime, finishedprocess->runningtime, 0, finishedprocess->waitingtime, TA, WTA);
-    fflush(schedulerLog);
-
-    allWTA[processCount - 1] = WTA;
-    totalWTA += WTA;
-
-    totalWaitingTime += finishedprocess->waitingtime;
-    totalRT += finishedprocess->runningtime;
     // Remove the finished process from the queue
     PQremove(PQ, finishedprocess);
     free(finishedprocess);
@@ -404,7 +354,7 @@ void finishedPhandler(int signum)
   }
   else
   {
-    // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
+    // when a process finishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
     // the scheduler should remove the process from the queue and free its memory
     flag = 0;
   }
@@ -435,17 +385,11 @@ void RRScheduler(int quantum)
       {
         runningProcess->starttime = getClk();
         runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
-
-        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
-        fflush(schedulerLog);
       }
       else
       {
         int tempTime = getClk() - runningProcess->laststoptime;
         runningProcess->waitingtime += tempTime;
-        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
-
-        fflush(schedulerLog);
       }
 
       int curr, prev;
@@ -458,11 +402,8 @@ void RRScheduler(int quantum)
       kill(runningProcess->realPid, SIGCONT);
       runningProcess->remainingtime -= runtime;
       received = 0;
-
-      // printf("Waiting\n");
       // Wait till you get a signal from the process that it received your signal
       while (!received);
-      // printf("signaled\n");
       
     }
 
@@ -485,23 +426,12 @@ void RRScheduler(int quantum)
       {
         // printf("%d Stopped\n", runningProcess->realPid);
         kill(runningProcess->realPid, SIGSTOP);
-        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime - (runningProcess->remainingtime), runningProcess->remainingtime, runningProcess->waitingtime);
-        fflush(schedulerLog);
 
         runningProcess->laststoptime = getClk();
         normalQenqueue(Q, runningProcess);
       }
       else
       {
-        int TA = getClk() - runningProcess->arrivaltime;
-        float WTA = (float)TA / (float)runningProcess->runningtime;
-        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d TA %d WTA %.2f\n", getClk(), runningProcess->id, "finished", runningProcess->arrivaltime, runningProcess->runningtime, 0, runningProcess->waitingtime, TA, WTA);
-        fflush(schedulerLog);
-
-        allWTA[processCount - 1] = WTA;
-        totalWTA += WTA;
-        totalWaitingTime += runningProcess->waitingtime;
-        totalRT += runningProcess->runningtime;
 
         printf("%c finished at time = %d\n", ('A' + (runningProcess->id - 1) ), getClk());
         free(runningProcess);
@@ -529,30 +459,7 @@ process *initProcess()
   char runnungtimearg[20]; // a string containing the raunnumg time to be sent as argument to the forked process
   sprintf(runnungtimearg, "%d", newprocess->runningtime);
 
-  // char arrivaltime[20]; // same for arrival time (msh 3aref hn7tagha wla la)
-  // sprintf(arrivaltime, "%d", newprocess->arrivaltime);
-
   int pid = forkNewProcess(runnungtimearg); // create a real process
   newprocess->realPid = pid;   // set the real id of the forked process
   return newprocess;
-}
-
-void outputFile()
-{
-
-  float avgWTA = (float)totalWTA / currentProcessCount;
-  float avgWaitingTime = (float)totalWaitingTime / currentProcessCount;
-  float CPUutilization = (float)totalRT / getClk() * 100;
-  float currentTime = 0, StandardDeviation = 0;
-  for (int i = 0; i < currentProcessCount; i++)
-  {
-    StandardDeviation += pow(allWTA[i] - avgWTA, 2);
-  }
-  StandardDeviation = sqrt(StandardDeviation / currentProcessCount);
-
-  fprintf(schedulerPref, "CPU Utilization = %.2f%% \nAvg WTA = %.2f\nAvg WT = %.2f\nStd WTA = %.2f\n",
-          CPUutilization, avgWTA, avgWaitingTime, StandardDeviation);
-  fflush(schedulerPref);
-
-  printf("Output generated successfully\n");
 }
