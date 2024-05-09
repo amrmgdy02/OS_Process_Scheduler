@@ -9,9 +9,11 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include "DataStructures/PriorityQueue.h"
+#include "DataStructures/Memory.h"
 
 ////////////////////////////////
 Queue *processesQueue;
+MemoryBlock *blockQueue;
 struct msgbuff processmsg;
 
 void setProcessParameters(int id, int arr, int runningtime, int pri);
@@ -28,7 +30,8 @@ int main(int argc, char *argv[])
 {
     signal(SIGINT, clearResources);
     // TODO: Initialization
-
+    blockQueue = createMemoryTree(0, 1024);
+    
     FILE *file;
     char line[256];
     int processesNumber = 0;

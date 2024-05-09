@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "../Clock/headers.h"
-
-#define MEMORY_SIZE 1024
+#include "PriorityQueue.h"
 
 typedef struct MemoryBlock {
     int start;
@@ -17,23 +15,11 @@ typedef struct MemoryBlock {
     struct MemoryBlock* parent;
 } MemoryBlock;
 
-MemoryBlock* createMemoryTree(int start, int size) {
-    MemoryBlock* root = createMemoryBlock(start, size);
-    if (size > 1) {
-        int newSize = size / 2;
-        root->left = createMemoryTree(start, newSize);
-        root->left->parent = root;
-        root->right = createMemoryTree(newSize, size);
-        root->right->parent = root;
-    }
-    return root;
-}
-
 MemoryBlock* createMemoryBlock(int start, int size) {
     MemoryBlock* memBlock = (MemoryBlock*)malloc(sizeof(MemoryBlock));
     memBlock->start = start;
-    memBlock->end = size-1;
-    memBlock->size = size-start;
+    memBlock->end = start + size-1;
+    memBlock->size = size;
     memBlock->split = 0;
     memBlock->processId = -1;
     memBlock->isEmpty = true;
@@ -52,11 +38,8 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
         memBlock->isEmpty = false;
         return true;
     }
-    if(addProcess(memBlock->left, process)){
-        return true;
-    }else if(addProcess(memBlock->right, process)){
-        return true;
-    }else if (memBlock-> split == 0){
+    int newSize = memBlock->size / 2;
+    if(process->memorySize > newSize){       
         memBlock->processId = process->id;
         memBlock->isEmpty = false;
         while (memBlock->parent){
@@ -65,20 +48,39 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
         }
         return true;
     }
+    if (memBlock->left == NULL && memBlock->right == NULL) {
+        memBlock->left = createMemoryBlock(memBlock->start, newSize);
+        memBlock->left->parent = memBlock;
+        memBlock->right = createMemoryBlock(memBlock->start + newSize,newSize);
+        memBlock->right->parent = memBlock;
+    }
+    if(addProcess(memBlock->left, process)){
+        return true;
+    }else if(addProcess(memBlock->right, process)){
+        return true;
+    }
     return false;
 }
 
 void freeMemory(MemoryBlock* memBlock, int processId) {
     if (memBlock == NULL) return;
+
     if (memBlock->processId == processId) {
         memBlock->processId = -1;
         memBlock->isEmpty = true;
-        while (memBlock->parent){
+        while (memBlock->parent) {
             memBlock->parent->split--;
-            memBlock->parent = memBlock->parent->parent;
+            if (memBlock->parent->left->isEmpty && memBlock->parent->right->isEmpty) {
+                free(memBlock->parent->left);
+                free(memBlock->parent->right);
+                memBlock->parent->left = NULL;
+                memBlock->parent->right = NULL;
+            }
+            memBlock = memBlock->parent;
         }
         return;
     }
+
     freeMemory(memBlock->left, processId);
     freeMemory(memBlock->right, processId);
 }

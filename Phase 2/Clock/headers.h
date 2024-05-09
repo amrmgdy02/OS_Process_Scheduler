@@ -11,10 +11,10 @@
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
+#include <stdbool.h>
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-typedef short bool;
 #define true 1
 #define false 0
 
