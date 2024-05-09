@@ -1,4 +1,3 @@
-// #include "./Clock/headers.h"
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
@@ -10,10 +9,10 @@
 #include <signal.h>
 #include "DataStructures/PriorityQueue.h"
 #include "DataStructures/Memory.h"
+#define MEMORY_SIZE 1024
 
-////////////////////////////////
 Queue *processesQueue;
-MemoryBlock *blockQueue;
+MemoryBlock *memoryBlock;
 struct msgbuff processmsg;
 
 void setProcessParameters(int id, int arr, int runningtime, int pri, int memorysize);
@@ -29,8 +28,7 @@ void clearResources(int);
 int main(int argc, char *argv[])
 {
     signal(SIGINT, clearResources);
-    // TODO: Initialization
-  //  blockQueue = createMemoryBlock(0, 1024);
+    memoryBlock = createMemoryBlock(0, MEMORY_SIZE);
     
     FILE *file;
     char line[256];
@@ -39,7 +37,6 @@ int main(int argc, char *argv[])
 
     processmsg.mtype = 7; /* arbitrary value */
 
-    // 1. Read the input files.
     // Open processes file
     file = fopen("processes.txt", "r");
 
@@ -65,13 +62,12 @@ int main(int argc, char *argv[])
             arrivedProcess = createProcess(id, priority, arrivalTime, runningTime, memorySize);
             normalQenqueue(processesQueue, arrivedProcess);
             printf("Process ID: %d, Arrival Time: %d, Running Time: %d, Priority: %d, Memory Size: %d\n", id, arrivalTime, runningTime, priority, memorySize);
-            //attachTomemory(process);
             processesNumber++;
         }
     }
     sprintf(processesCount, "%d", processesNumber);
 
-    // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
+    // Ask the user for the chosen scheduling algorithm and its parameters, if there are any
     int algorithm;
     int RR;
 
@@ -100,8 +96,6 @@ int main(int argc, char *argv[])
     printf("Chosen algorithm: %d\n", algorithm);
     sprintf(algo, "%d", algorithm);
 
-    // 3. Initiate and create the scheduler and clock processes.
-
     //////////////////////////////////////////////////////////////////////////////////
 
     key_t key_id;
@@ -115,24 +109,18 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    ///////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////
 
     int clckID = createClockProcess();
     int schedulerID = createSchedulerProcess();
-    // printf("Scheduler id is: %d\n", schedulerID);
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
-    //   display(processesQueue);
-
-    // 4. Use this function after creating the clock process to initialize clock
+    // Initialize clock
     initClk();
-    // To get time use this
 
     int x = getClk();
     printf("current time is %d\n", x);
-
-    // TODO: Generation Main Loop
 
     ///////////////////////////////////////////////////////////////
     process *currp = peek(processesQueue);
@@ -147,31 +135,18 @@ int main(int argc, char *argv[])
             setProcessParameters(temp->id, temp->arrivaltime, temp->runningtime, temp->priority, temp->memorySize);
             processmsg.mtype = schedulerID;
             send_val = msgsnd(msgq_id, &processmsg, sizeof(processmsg.arrivedProcess), !IPC_NOWAIT);
-            //   kill (schedulerID, SIGUSR1);
 
             if (send_val == -1)
             {
                 perror("sending error: ");
             }
-            //  else
-            //    printf("procees with priority: %d sent on queue\n", processmsg.arrivedProcess.priority);
         }
     }
 
     //////////////////////////////////////////////////////////////////////////////////
 
-    // 5. Create a data structure for processes and provide it with its parameters.
+    while (true);
 
-    // 6. Send the information to the scheduler at the appropriate time.
-    // 7. Clear clock resources
-
-    while (true)
-        ;
-    destroyClk(true);
-    msgctl(msgq_id, IPC_RMID, (struct msqid_ds *)0);
-    kill(getpgrp(), SIGKILL);
-
-    fclose(file);
     return 0;
 }
 
@@ -180,7 +155,7 @@ void clearResources(int signum)
     destroyClk(true);
     msgctl(msgq_id, IPC_RMID, (struct msqid_ds *)0);
     kill(getpgrp(), SIGKILL);
-    // TODO: Clears all resources in case of interruption
+    fclose(file);
 }
 
 void setProcessParameters(int id, int arr, int runningtime, int pri, int memorySize)
