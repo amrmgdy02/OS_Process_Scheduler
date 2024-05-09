@@ -37,6 +37,7 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
     if (memBlock->size == process->memorySize) {
         memBlock->processId = process->id;
         memBlock->isEmpty = false;
+        printf("gggggg\n");
         return true;
     }
     int newSize = memBlock->size / 2;
@@ -47,6 +48,7 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
             memBlock->parent->split++;
             memBlock->parent = memBlock->parent->parent;
         }
+        printf("gggggg\n");
         return true;
     }
     if (memBlock->left == NULL && memBlock->right == NULL) {
@@ -56,8 +58,10 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
         memBlock->right->parent = memBlock;
     }
     if(addProcess(memBlock->left, process)){
+        printf("gggggg\n");
         return true;
     }else if(addProcess(memBlock->right, process)){
+        printf("gggggg\n");
         return true;
     }
     return false;
