@@ -60,10 +60,8 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
         memBlock->right->parent = memBlock;
     }
     if(addProcess(memBlock->left, process)){
-        printf("gggggg\n");
         return true;
     }else if(addProcess(memBlock->right, process)){
-        printf("gggggg\n");
         return true;
     }
     return false;
@@ -77,12 +75,14 @@ void freeMemory(MemoryBlock* memBlock, int processId) {
         memBlock->isEmpty = true;
         while (memBlock->parent) {
             memBlock->parent->split--;
-            if (memBlock->parent->left->isEmpty && memBlock->parent->right->isEmpty) {
-                free(memBlock->parent->left);
-                free(memBlock->parent->right);
-                memBlock->parent->left = NULL;
-                memBlock->parent->right = NULL;
-            }
+               if (memBlock->parent->left->isEmpty) {
+                    if(memBlock->parent->right->isEmpty){
+                    free(memBlock->parent->left);
+                    memBlock->parent->left = NULL;
+                    free(memBlock->parent->right);
+                    memBlock->parent->right = NULL;
+                    }
+                }
             memBlock = memBlock->parent;
         }
         return;
