@@ -6,3 +6,4 @@ scheduler.out
 scheduler.pref
 test_generator.out
 processes.txt
+*.out
