@@ -343,8 +343,10 @@ void processReceivedSignal(int signum)
 
 void sigtermhandler(int signum)
 {
-  free(Q);
-  free(PQ);
+  if (Q)
+    free(Q);
+  if (PQ)
+    free(PQ);
   kill(getpgrp(), SIGKILL);
   signal(SIGTERM, sigtermhandler);
 }
