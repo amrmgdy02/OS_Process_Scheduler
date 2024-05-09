@@ -9,6 +9,7 @@ struct processData
     int priority;
     int runningtime;
     int id;
+    int memorySize;
 };
 
 int main(int argc, char * argv[])

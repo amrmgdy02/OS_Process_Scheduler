@@ -16,7 +16,7 @@ Queue *processesQueue;
 MemoryBlock *blockQueue;
 struct msgbuff processmsg;
 
-void setProcessParameters(int id, int arr, int runningtime, int pri);
+void setProcessParameters(int id, int arr, int runningtime, int pri, int memorysize);
 int createClockProcess();
 int createSchedulerProcess();
 
@@ -30,12 +30,12 @@ int main(int argc, char *argv[])
 {
     signal(SIGINT, clearResources);
     // TODO: Initialization
-    blockQueue = createMemoryTree(0, 1024);
+  //  blockQueue = createMemoryBlock(0, 1024);
     
     FILE *file;
     char line[256];
     int processesNumber = 0;
-    int id, arrivalTime, runningTime, priority;
+    int id, arrivalTime, runningTime, priority, memorySize;
 
     processmsg.mtype = 7; /* arbitrary value */
 
@@ -190,7 +190,7 @@ void setProcessParameters(int id, int arr, int runningtime, int pri, int memoryS
     processmsg.arrivedProcess.priority = pri;
     processmsg.arrivedProcess.runningtime = runningtime;
     processmsg.arrivedProcess.remainingtime = runningtime;
-    processmsg.memorySize = memorySize;
+    processmsg.arrivedProcess.memorySize = memorySize;
 }
 
 int createClockProcess()

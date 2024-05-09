@@ -117,16 +117,16 @@ void SRTN()
 
       ///////////////////////////// for message queue method //////////////////////////////
 
-      // if (runningProcess->runningtime != runningProcess->remainingtime)  // if it is the first run for the process, the handler is not attatched to the signal yet
-      // {
-      //   proc_buff.currtime = getClk();
-      //   proc_buff.mtype = runningProcess->realPid;
+      if (runningProcess->runningtime != runningProcess->remainingtime)  // if it is the first run for the process, the handler is not attatched to the signal yet
+      {
+        proc_buff.currtime = getClk();
+        proc_buff.mtype = runningProcess->realPid;
 
-      //   printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
+        printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
 
-      //   msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
+        msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
 
-      // }
+      }
 
       kill(runningProcess->realPid, SIGCONT);
 
@@ -164,12 +164,13 @@ void SRTNaddprocess()
       printf("\nSWITCH!!!\n\n");
 
       ///////////////////////////// for message queue method //////////////////////////////
-      // proc_buff.currtime = getClk();
-      // proc_buff.mtype = runningProcess->realPid;
 
-      // printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
+      proc_buff.currtime = getClk();
+      proc_buff.mtype = runningProcess->realPid;
 
-      // msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
+      printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
+
+      msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
 
 
       kill(runningProcess->realPid, SIGTSTP);
@@ -491,7 +492,7 @@ void RRScheduler(int quantum)
 process *initProcess()
 {
   process *newprocess = createProcess(SCH_message.arrivedProcess.id, SCH_message.arrivedProcess.priority,
-                                      SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.runningtime);
+                                      SCH_message.arrivedProcess.arrivaltime, SCH_message.arrivedProcess.runningtime, SCH_message.arrivedProcess.memorySize);
 
   char runnungtimearg[20]; // a string containing the raunnumg time to be sent as argument to the forked process
   sprintf(runnungtimearg, "%d", newprocess->runningtime);

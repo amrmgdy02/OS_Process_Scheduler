@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "PriorityQueue.h"
+#pragma once
+#include "../Clock/headers.h"
 
 typedef struct MemoryBlock {
     int start;
