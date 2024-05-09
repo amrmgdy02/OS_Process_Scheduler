@@ -392,7 +392,7 @@ void finishedPhandler(int signum)
   }
   else
   {
-    // when a process fnishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
+    // when a process finishes it should notify the scheduler on termination, the scheduler does NOT terminate the process.
     // the scheduler should remove the process from the queue and free its memory
     flag = 0;
   }
