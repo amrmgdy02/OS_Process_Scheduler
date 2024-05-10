@@ -108,7 +108,7 @@ void initClk()
     }
 
     // Print a message to indicate successful initialization
-    printf("Clock initialized.\n");
+    printf("lized.\n");
 }
 
 /*

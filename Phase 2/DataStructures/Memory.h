@@ -16,7 +16,7 @@ typedef struct MemoryBlock {
     struct MemoryBlock* parent;
 } MemoryBlock;
 
-MemoryBlock* createMemoryBlock(int start, int size) {
+MemoryBlock* createMemoryBlock(int start, int size, MemoryBlock* myParent) {
     MemoryBlock* memBlock = (MemoryBlock*)malloc(sizeof(MemoryBlock));
     memBlock->start = start;
     memBlock->end = start + size-1;
@@ -26,7 +26,7 @@ MemoryBlock* createMemoryBlock(int start, int size) {
     memBlock->isEmpty = true;
     memBlock->left = NULL;
     memBlock->right = NULL;
-    memBlock->parent = NULL;
+    memBlock->parent = myParent;
     //printf("new memory block created - start : %d  end : %d\n", memBlock->start, memBlock->end);
     return memBlock;
 }
@@ -38,9 +38,10 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
     if (memBlock->size == process->memorySize && memBlock->split == 0) {
         memBlock->processId = process->id;
         memBlock->isEmpty = false;
-        while (memBlock->parent){
-            memBlock->parent->split+=1;
-            memBlock->parent = memBlock->parent->parent;
+        MemoryBlock* temp = memBlock->parent;
+        while (temp){
+            temp->split += 1;
+            temp = temp->parent;
         }
         int currentTime = getClk();
         printf("At time %d allocated %d bytes for process %d from %d to %d\n",currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
@@ -50,19 +51,18 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
     if(process->memorySize > newSize && memBlock->split == 0){
         memBlock->processId = process->id;
         memBlock->isEmpty = false;
-        while (memBlock->parent){
-            memBlock->parent->split+=1;
-            memBlock->parent = memBlock->parent->parent;
+        MemoryBlock* temp = memBlock->parent;
+        while (temp){
+            temp->split += 1;
+            temp = temp->parent;
         }
         int currentTime = getClk();
         printf("At time %d allocated %d bytes for process %d from %d to %d\n",currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
         return true;
     }
     if (memBlock->left == NULL && memBlock->right == NULL) {
-        memBlock->left = createMemoryBlock(memBlock->start, newSize);
-        memBlock->left->parent = memBlock;
-        memBlock->right = createMemoryBlock(memBlock->start + newSize,newSize);
-        memBlock->right->parent = memBlock;
+        memBlock->left = createMemoryBlock(memBlock->start, newSize, memBlock);
+        memBlock->right = createMemoryBlock(memBlock->start + newSize, newSize, memBlock);
     }
     if(addProcess(memBlock->left, process)){
         return true;
@@ -72,27 +72,34 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
     return false;
 }
 
-void freeMemory(MemoryBlock* memBlock, int processId) {
-    if (memBlock == NULL) return;
-
+void freeMemory(MemoryBlock* memBlock, int processId, int *flag) {
+    if (memBlock == NULL || *flag == 1) return;
     if (memBlock->processId == processId) {
         memBlock->processId = -1;
         memBlock->isEmpty = true;
-        while (memBlock->parent) {
-            memBlock->parent->split-=1;
-            if (memBlock->parent->left->isEmpty && memBlock->parent->right->isEmpty) {
-                if (memBlock->parent->left != NULL)
-                  free(memBlock->parent->left);
-                if (memBlock->parent->right != NULL)
-                  free(memBlock->parent->right);
-                memBlock->parent->left = NULL;
-                memBlock->parent->right = NULL;
+        *flag = 1;
+
+        // Traverse upwards, freeing memory blocks and updating split counts
+        MemoryBlock* currentBlock = memBlock;
+        while (currentBlock->parent != NULL) {
+            currentBlock->parent->split -= 1;
+
+            // Free the child nodes if they are both empty
+            if (currentBlock->parent->left->isEmpty && currentBlock->parent->right->isEmpty) {
+                free(currentBlock->parent->left);
+                free(currentBlock->parent->right);
+                currentBlock->parent->left = NULL;
+                currentBlock->parent->right = NULL;
             }
-            memBlock = memBlock->parent;
+            currentBlock = currentBlock->parent; // Move up to the parent
         }
         return;
     }
 
-    freeMemory(memBlock->left, processId);
-    freeMemory(memBlock->right, processId);
+    // Recursively search left and right subtrees
+    freeMemory(memBlock->left, processId, flag);
+    freeMemory(memBlock->right, processId, flag);
 }
+
+
+

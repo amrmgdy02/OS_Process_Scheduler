@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 
 
   waitingQueue = createQueue();
-  memory_block = createMemoryBlock(0, MEMORY_SIZE);
+  memory_block = createMemoryBlock(0, MEMORY_SIZE, NULL);
 
   getAlgorithm();
 
@@ -327,8 +327,8 @@ void finishedPhandler(int signum)
     runningProcess = NULL;
     finishedprocess = PQdequeue(PQ);
     printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
-
-    freeMemory(memory_block, finishedprocess->id);
+    int flag = 0;
+    freeMemory(memory_block, finishedprocess->id, &flag);
 
     if (!isEmpty(waitingQueue))
     {
