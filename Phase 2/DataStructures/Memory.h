@@ -44,7 +44,7 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
             temp = temp->parent;
         }
         int currentTime = getClk();
-        printf("At time %d allocated %d bytes for process %d from %d to %d\n",currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
+        printf("\nAt time %d allocated %d bytes for process %d from %d to %d\n",currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
         return true;
     }
     int newSize = memBlock->size / 2;
@@ -57,7 +57,7 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
             temp = temp->parent;
         }
         int currentTime = getClk();
-        printf("At time %d allocated %d bytes for process %d from %d to %d\n",currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
+        printf("\nAt time %d allocated %d bytes for process %d from %d to %d\n",currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
         return true;
     }
     if (memBlock->left == NULL && memBlock->right == NULL) {
@@ -77,6 +77,7 @@ void updateMemory(MemoryBlock* memBlock, process* process, int* flag) {
     if (memBlock->processId == process->id) {
         memBlock->processId = -1;
         memBlock->isEmpty = true;
+        printf("\nAt time %d freed %d bytes from process %d from: %d to %d\n", getClk(), process->memorySize, process->id, memBlock->start, memBlock->end);
         *flag = 1;
         MemoryBlock* currentBlock = memBlock;
         while (currentBlock->parent != NULL) {

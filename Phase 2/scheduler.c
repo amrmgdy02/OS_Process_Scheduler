@@ -142,7 +142,7 @@ void SRTNaddprocess()
   {
     if (addProcess(memory_block, newprocess) == false)
     {
-      printf("Process %d Added to waitingQueue\n", newprocess->id);
+      printf("\nProcess %d Added to waitingQueue\n", newprocess->id);
       normalQenqueue(waitingQueue, newprocess);
       return;
     }
@@ -160,9 +160,6 @@ void SRTNaddprocess()
 
         proc_buff.currtime = getClk();
         proc_buff.mtype = runningProcess->realPid;
-
-        // printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
-
         msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
 
         kill(runningProcess->realPid, SIGTSTP);
@@ -232,12 +229,14 @@ void HPFaddprocess()
   {
     if (addProcess(memory_block, newprocess) == false)
     {
-      printf("Process %d Added to waitingQueue\n", newprocess->id);
+      printf("\nProcess %d Added to waitingQueue\n", newprocess->id);
       normalQenqueue(waitingQueue, newprocess);
       return;
     }
+
     HPFenqueue(PQ, newprocess, newprocess->priority);
-    if (PQpeek(PQ) == newprocess && runningProcess && runningProcess->remainingtime == runningProcess->runningtime) // change lw el running de lesa bad2a wl wesel priority a3la mnha
+
+    if (runningProcess != NULL && newprocess->priority < runningProcess->priority && runningProcess->remainingtime == runningProcess->remainingtime)
     {
       kill(newprocess->realPid, SIGCONT);
       kill(runningProcess->realPid, SIGTSTP);
@@ -336,7 +335,7 @@ void finishedPhandler(int signum)
     process *finishedprocess = NULL;
     runningProcess = NULL;
     finishedprocess = PQdequeue(PQ);
-    printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
+    printf("\nProcess ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
     int memFlag = 0;
     updateMemory(memory_block, finishedprocess, &memFlag);
 
@@ -356,7 +355,7 @@ void finishedPhandler(int signum)
   else if (algorithm == 1)
   {
     process *finishedprocess = runningProcess;
-    printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
+    printf("\nProcess ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
     // Remove the finished process from the queue
     PQremove(PQ, finishedprocess);
     free(finishedprocess);
