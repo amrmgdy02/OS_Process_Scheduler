@@ -11,7 +11,6 @@ int TA;
 float WTA;
 float *allWTA;
 
-
 int proc_msgq_id;
 
 // set to zero when it receives a termination signal from a process
@@ -27,9 +26,7 @@ key_t sch_key_id;
 int sch_rec_val, sch_msgq_id;
 struct msgbuff SCH_message;
 
-
 struct sch_proc_buff proc_buff;
-
 
 int children_shmid;
 int *children_shmaddr;
@@ -85,15 +82,14 @@ int main(int argc, char *argv[])
   finishedQueue = createQueue();
   connectWithGenerator();
 
- proc_msgq_id = msgget(4000, 0666 | IPC_CREAT);
- if (proc_msgq_id == -1)
- {
-      perror("Error in create");
-      exit(-1);
- }
- else printf("Message queue id = %d\n", proc_msgq_id);
-
-
+  proc_msgq_id = msgget(4000, 0666 | IPC_CREAT);
+  if (proc_msgq_id == -1)
+  {
+    perror("Error in create");
+    exit(-1);
+  }
+  else
+    printf("Message queue id = %d\n", proc_msgq_id);
 
   waitingQueue = createQueue();
   memory_block = createMemoryBlock(0, 1024);
@@ -124,13 +120,12 @@ void SRTN()
       runningProcess = PQpeek(PQ);
 
       ///////////////////////////// for message queue method //////////////////////////////
-      if (runningProcess->runningtime != runningProcess->remainingtime)  // if it is the first run for the process, the handler is not attatched to the signal yet
+      if (runningProcess->runningtime != runningProcess->remainingtime) // if it is the first run for the process, the handler is not attatched to the signal yet
       {
         proc_buff.currtime = getClk();
         proc_buff.mtype = runningProcess->realPid;
-      //  printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
+        //  printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
         msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
-
       }
 
       kill(runningProcess->realPid, SIGCONT);
@@ -160,66 +155,63 @@ void SRTNaddprocess()
   process *newprocess = initProcess();
   if (isEmpty(waitingQueue))
   {
-  if (addProcess(memory_block, newprocess) == false)
-  {
-    printf("memory allocation failed\n");
-    normalQenqueue(waitingQueue, newprocess);
-    return;
-  }
-  if (runningProcess != NULL)
-  {
-    runningProcess->remainingtime = runningProcess->remainingtime - (getClk() - runningProcess->lastRunningClk);
-    runningProcess->lastRunningClk = getClk();
-    SRTNenqueue(PQ, newprocess, newprocess->remainingtime);
-    if (newprocess->remainingtime < runningProcess->remainingtime)
+    if (addProcess(memory_block, newprocess) == false)
     {
-
-     // printf("\nSWITCH!!!\n\n");
-
-      ///////////////////////////// for message queue method //////////////////////////////
-
-      proc_buff.currtime = getClk();
-      proc_buff.mtype = runningProcess->realPid;
-
-     // printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
-
-      msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
-
-
-      kill(runningProcess->realPid, SIGTSTP);
-
-
-      fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
-      fflush(schedulerLog);
-
-      runningProcess->laststoptime = getClk();
-      runningProcess = newprocess;
-
-
-      kill(runningProcess->realPid, SIGCONT);
+      printf("memory allocation failed\n");
+      normalQenqueue(waitingQueue, newprocess);
+      return;
+    }
+    if (runningProcess != NULL)
+    {
+      runningProcess->remainingtime = runningProcess->remainingtime - (getClk() - runningProcess->lastRunningClk);
       runningProcess->lastRunningClk = getClk();
-      if (runningProcess->remainingtime == runningProcess->runningtime)
+      SRTNenqueue(PQ, newprocess, newprocess->remainingtime);
+      if (newprocess->remainingtime < runningProcess->remainingtime)
       {
-        runningProcess->starttime = getClk();
-        runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
 
-        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
-        fflush(schedulerLog);
-      }
-      else
-      {
-        int tempTime = getClk() - runningProcess->laststoptime;
-        runningProcess->waitingtime += tempTime;
-        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
+        // printf("\nSWITCH!!!\n\n");
 
+        ///////////////////////////// for message queue method //////////////////////////////
+
+        proc_buff.currtime = getClk();
+        proc_buff.mtype = runningProcess->realPid;
+
+        // printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
+
+        msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
+
+        kill(runningProcess->realPid, SIGTSTP);
+
+        fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "stopped", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
         fflush(schedulerLog);
+
+        runningProcess->laststoptime = getClk();
+        runningProcess = newprocess;
+
+        kill(runningProcess->realPid, SIGCONT);
+        runningProcess->lastRunningClk = getClk();
+        if (runningProcess->remainingtime == runningProcess->runningtime)
+        {
+          runningProcess->starttime = getClk();
+          runningProcess->waitingtime = runningProcess->starttime - (runningProcess->arrivaltime);
+
+          fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "started", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
+          fflush(schedulerLog);
+        }
+        else
+        {
+          int tempTime = getClk() - runningProcess->laststoptime;
+          runningProcess->waitingtime += tempTime;
+          fprintf(schedulerLog, "#At time %d process %d %s arr %d total %d remain %d wait %d\n", getClk(), runningProcess->id, "resumed", runningProcess->arrivaltime, runningProcess->runningtime, runningProcess->remainingtime, runningProcess->waitingtime);
+
+          fflush(schedulerLog);
+        }
       }
     }
-  }
-  else
-  {
-    SRTNenqueue(PQ, newprocess, newprocess->remainingtime);
-  }
+    else
+    {
+      SRTNenqueue(PQ, newprocess, newprocess->remainingtime);
+    }
   }
   else
   {
@@ -263,12 +255,25 @@ void HPF()
 void HPFaddprocess()
 {
   process *newprocess = initProcess();
-  HPFenqueue(PQ, newprocess, newprocess->priority);
-  if (PQpeek(PQ) == newprocess && runningProcess && runningProcess->remainingtime == runningProcess->runningtime) // change lw el running de lesa bad2a wl wesel priority a3la mnha
+  if (isEmpty(waitingQueue))
   {
-    kill(newprocess->realPid, SIGCONT);
-    kill(runningProcess->realPid, SIGTSTP);
-    runningProcess = newprocess;
+    if (addProcess(memory_block, newprocess) == false)
+    {
+      printf("memory allocation failed\n");
+      normalQenqueue(waitingQueue, newprocess);
+      return;
+    }
+    HPFenqueue(PQ, newprocess, newprocess->priority);
+    if (PQpeek(PQ) == newprocess && runningProcess && runningProcess->remainingtime == runningProcess->runningtime) // change lw el running de lesa bad2a wl wesel priority a3la mnha
+    {
+      kill(newprocess->realPid, SIGCONT);
+      kill(runningProcess->realPid, SIGTSTP);
+      runningProcess = newprocess;
+    }
+  }
+  else
+  {
+    normalQenqueue(waitingQueue, newprocess);
   }
 }
 
@@ -398,6 +403,17 @@ void finishedPhandler(int signum)
     PQremove(PQ, finishedprocess);
     free(finishedprocess);
     runningProcess = NULL;
+    freeMemory(memory_block, finishedprocess->id);
+
+    if (!isEmpty(waitingQueue))
+    {
+      process *new = peek(waitingQueue);
+      if (addProcess(memory_block, new) == true)
+      {
+        dequeue(waitingQueue);
+        HPFenqueue(PQ, new, new->priority);
+      }
+    }
     processCount--;
   }
   else
@@ -451,7 +467,7 @@ void RRScheduler(int quantum)
       int counter = 0;
       received = 1;
 
-      printf("Process %c started at time = %d\n", ('A' + (runningProcess->id - 1) ), curr);
+      printf("Process %c started at time = %d\n", ('A' + (runningProcess->id - 1)), curr);
 
       kill(runningProcess->realPid, SIGCONT);
       runningProcess->remainingtime -= runtime;
@@ -459,9 +475,9 @@ void RRScheduler(int quantum)
 
       // printf("Waiting\n");
       // Wait till you get a signal from the process that it received your signal
-      while (!received);
+      while (!received)
+        ;
       // printf("signaled\n");
-      
     }
 
     // This loop checks for the incoming processes, if there is no incoming processes, it will break and continue running the current process
@@ -501,7 +517,7 @@ void RRScheduler(int quantum)
         totalWaitingTime += runningProcess->waitingtime;
         totalRT += runningProcess->runningtime;
 
-        printf("%c finished at time = %d\n", ('A' + (runningProcess->id - 1) ), getClk());
+        printf("%c finished at time = %d\n", ('A' + (runningProcess->id - 1)), getClk());
         free(runningProcess);
         processCount--;
         flag = 1;
@@ -531,7 +547,7 @@ process *initProcess()
   // sprintf(arrivaltime, "%d", newprocess->arrivaltime);
 
   int pid = forkNewProcess(runnungtimearg); // create a real process
-  newprocess->realPid = pid;   // set the real id of the forked process
+  newprocess->realPid = pid;                // set the real id of the forked process
   return newprocess;
 }
 
