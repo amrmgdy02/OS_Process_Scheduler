@@ -108,7 +108,7 @@ void initClk()
     }
 
     // Print a message to indicate successful initialization
-    printf("lized.\n");
+    //printf("lized.\n");
 }
 
 /*

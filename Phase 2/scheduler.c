@@ -87,7 +87,8 @@ int main(int argc, char *argv[])
   memory_block = createMemoryBlock(0, MEMORY_SIZE, NULL);
 
   getAlgorithm();
-
+  printf("Freeing Memory\n");
+  freeAllMemory(memory_block);
   destroyClk(true);
   fclose(schedulerLog);
   kill(getppid(), SIGINT);
@@ -141,7 +142,7 @@ void SRTNaddprocess()
   {
     if (addProcess(memory_block, newprocess) == false)
     {
-      printf("memory allocation failed\n");
+      printf("Process %d Added to waitingQueue\n", newprocess->id);
       normalQenqueue(waitingQueue, newprocess);
       return;
     }
@@ -231,7 +232,7 @@ void HPFaddprocess()
   {
     if (addProcess(memory_block, newprocess) == false)
     {
-      printf("memory allocation failed\n");
+      printf("Process %d Added to waitingQueue\n", newprocess->id);
       normalQenqueue(waitingQueue, newprocess);
       return;
     }
@@ -336,8 +337,8 @@ void finishedPhandler(int signum)
     runningProcess = NULL;
     finishedprocess = PQdequeue(PQ);
     printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
-    int flag = 0;
-    freeMemory(memory_block, finishedprocess->id, &flag);
+    int memFlag = 0;
+    updateMemory(memory_block, finishedprocess, &memFlag);
 
     if (!isEmpty(waitingQueue))
     {
@@ -359,7 +360,8 @@ void finishedPhandler(int signum)
     PQremove(PQ, finishedprocess);
     free(finishedprocess);
     runningProcess = NULL;
-    freeMemory(memory_block, finishedprocess->id);
+    int memFlag = 0;
+    updateMemory(memory_block, finishedprocess, &memFlag);
 
     if (!isEmpty(waitingQueue))
     {
@@ -435,7 +437,12 @@ void RRScheduler(int quantum)
       {
         printf("Received\n");
         process *newprocess = initProcess();
-        normalQenqueue(Q, newprocess);
+        if (addProcess(memory_block, newprocess) == false){
+          printf("Process %d Added to waitingQueue\n", newprocess->id);
+          normalQenqueue(waitingQueue, newprocess);
+          return;
+        }
+          normalQenqueue(Q, newprocess);
       }
     }
 
@@ -452,8 +459,17 @@ void RRScheduler(int quantum)
       }
       else
       {
-       
-
+        int memFlag = 0;
+        updateMemory(memory_block, runningProcess, &memFlag);
+        if (!isEmpty(waitingQueue))
+        {
+         process *new = peek(waitingQueue);
+          if (addProcess(memory_block, new) == true)
+         {
+            dequeue(waitingQueue);
+            normalQenqueue(Q, new);
+         }
+        }
         printf("%c finished at time = %d\n", ('A' + (runningProcess->id - 1) ), getClk());
         free(runningProcess);
         processCount--;

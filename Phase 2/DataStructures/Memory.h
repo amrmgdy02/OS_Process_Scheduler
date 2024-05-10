@@ -72,34 +72,26 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
     return false;
 }
 
-void freeMemory(MemoryBlock* memBlock, int processId, int *flag) {
+void updateMemory(MemoryBlock* memBlock, process* process, int* flag) {
     if (memBlock == NULL || *flag == 1) return;
-    if (memBlock->processId == processId) {
+    if (memBlock->processId == process->id) {
         memBlock->processId = -1;
         memBlock->isEmpty = true;
         *flag = 1;
-
-        // Traverse upwards, freeing memory blocks and updating split counts
         MemoryBlock* currentBlock = memBlock;
         while (currentBlock->parent != NULL) {
             currentBlock->parent->split -= 1;
-
-            // Free the child nodes if they are both empty
-            if (currentBlock->parent->left->isEmpty && currentBlock->parent->right->isEmpty) {
-                free(currentBlock->parent->left);
-                free(currentBlock->parent->right);
-                currentBlock->parent->left = NULL;
-                currentBlock->parent->right = NULL;
-            }
-            currentBlock = currentBlock->parent; // Move up to the parent
+            currentBlock = currentBlock->parent;
         }
         return;
     }
-
-    // Recursively search left and right subtrees
-    freeMemory(memBlock->left, processId, flag);
-    freeMemory(memBlock->right, processId, flag);
+    updateMemory(memBlock->left, process, flag);
+    updateMemory(memBlock->right, process, flag);
 }
 
-
-
+void freeAllMemory(MemoryBlock* memBlock) {
+    if (memBlock == NULL) return;
+    freeAllMemory(memBlock->left);
+    freeAllMemory(memBlock->right);
+    free(memBlock);
+}
