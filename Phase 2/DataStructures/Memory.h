@@ -27,6 +27,7 @@ MemoryBlock* createMemoryBlock(int start, int size) {
     memBlock->left = NULL;
     memBlock->right = NULL;
     memBlock->parent = NULL;
+    //printf("new memory block created - start : %d  end : %d\n", memBlock->start, memBlock->end);
     return memBlock;
 }
 
@@ -34,19 +35,23 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
     if (memBlock == NULL || memBlock->isEmpty == false || memBlock->size < process->memorySize) {
         return false;
     }
-    if (memBlock->size == process->memorySize) {
+    if (memBlock->size == process->memorySize && memBlock->split == 0) {
         memBlock->processId = process->id;
         memBlock->isEmpty = false;
+        while (memBlock->parent){
+            memBlock->parent->split+=1;
+            memBlock->parent = memBlock->parent->parent;
+        }
         int currentTime = getClk();
         printf("At time %d allocated %d bytes for process %d from %d to %d\n",currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
         return true;
     }
     int newSize = memBlock->size / 2;
-    if(process->memorySize > newSize){       
+    if(process->memorySize > newSize && memBlock->split == 0){
         memBlock->processId = process->id;
         memBlock->isEmpty = false;
         while (memBlock->parent){
-            memBlock->parent->split++;
+            memBlock->parent->split+=1;
             memBlock->parent = memBlock->parent->parent;
         }
         int currentTime = getClk();
@@ -60,10 +65,8 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
         memBlock->right->parent = memBlock;
     }
     if(addProcess(memBlock->left, process)){
-        printf("gggggg\n");
         return true;
     }else if(addProcess(memBlock->right, process)){
-        printf("gggggg\n");
         return true;
     }
     return false;
@@ -76,10 +79,12 @@ void freeMemory(MemoryBlock* memBlock, int processId) {
         memBlock->processId = -1;
         memBlock->isEmpty = true;
         while (memBlock->parent) {
-            memBlock->parent->split--;
+            memBlock->parent->split-=1;
             if (memBlock->parent->left->isEmpty && memBlock->parent->right->isEmpty) {
-                free(memBlock->parent->left);
-                free(memBlock->parent->right);
+                if (memBlock->parent->left != NULL)
+                  free(memBlock->parent->left);
+                if (memBlock->parent->right != NULL)
+                  free(memBlock->parent->right);
                 memBlock->parent->left = NULL;
                 memBlock->parent->right = NULL;
             }

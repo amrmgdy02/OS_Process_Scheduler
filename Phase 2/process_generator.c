@@ -9,10 +9,8 @@
 #include <signal.h>
 #include "DataStructures/PriorityQueue.h"
 #include "DataStructures/Memory.h"
-#define MEMORY_SIZE 1024
 
 Queue *processesQueue;
-MemoryBlock *memoryBlock;
 struct msgbuff processmsg;
 
 void setProcessParameters(int id, int arr, int runningtime, int pri, int memorysize);
@@ -25,11 +23,13 @@ char processesCount[2];
 char quantum[5];
 FILE *file;
 
+int clckID;
+int schedulerID;
+
 void clearResources(int);
 int main(int argc, char *argv[])
 {
     signal(SIGINT, clearResources);
-    memoryBlock = createMemoryBlock(0, MEMORY_SIZE);
     
     char line[256];
     int processesNumber = 0;
@@ -111,8 +111,8 @@ int main(int argc, char *argv[])
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
-    int clckID = createClockProcess();
-    int schedulerID = createSchedulerProcess();
+    clckID = createClockProcess();
+    schedulerID = createSchedulerProcess();
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
