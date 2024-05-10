@@ -340,15 +340,16 @@ void finishedPhandler(int signum)
     int memFlag = 0;
     updateMemory(memory_block, finishedprocess, &memFlag);
 
-    if (!isEmpty(waitingQueue))
-    {
-      process *new = peek(waitingQueue);
-      if (addProcess(memory_block, new) == true)
-      {
+        while (!isEmpty(waitingQueue))
+        {
+         process *new = peek(waitingQueue);
+          if (addProcess(memory_block, new) == false)
+         {
+          break;
+         }
         dequeue(waitingQueue);
         SRTNenqueue(PQ, new, new->runningtime);
-      }
-    }
+        }
 
     processCount--;
   }
@@ -363,15 +364,16 @@ void finishedPhandler(int signum)
     int memFlag = 0;
     updateMemory(memory_block, finishedprocess, &memFlag);
 
-    if (!isEmpty(waitingQueue))
-    {
-      process *new = peek(waitingQueue);
-      if (addProcess(memory_block, new) == true)
-      {
+        while (!isEmpty(waitingQueue))
+        {
+         process *new = peek(waitingQueue);
+          if (addProcess(memory_block, new) == false)
+         {
+          break;
+         }
         dequeue(waitingQueue);
         HPFenqueue(PQ, new, new->priority);
-      }
-    }
+        }
     processCount--;
   }
   else
@@ -440,9 +442,9 @@ void RRScheduler(int quantum)
         if (addProcess(memory_block, newprocess) == false){
           printf("Process %d Added to waitingQueue\n", newprocess->id);
           normalQenqueue(waitingQueue, newprocess);
-          return;
-        }
+        }else{
           normalQenqueue(Q, newprocess);
+          }
       }
     }
 
@@ -461,14 +463,15 @@ void RRScheduler(int quantum)
       {
         int memFlag = 0;
         updateMemory(memory_block, runningProcess, &memFlag);
-        if (!isEmpty(waitingQueue))
+        while (!isEmpty(waitingQueue))
         {
          process *new = peek(waitingQueue);
-          if (addProcess(memory_block, new) == true)
+          if (addProcess(memory_block, new) == false)
          {
+          break;
+         }
             dequeue(waitingQueue);
             normalQenqueue(Q, new);
-         }
         }
         printf("%c finished at time = %d\n", ('A' + (runningProcess->id - 1) ), getClk());
         free(runningProcess);
