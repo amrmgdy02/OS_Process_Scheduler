@@ -23,6 +23,7 @@
 #define GEN_SCH_SHmKEY 400
 /////////////
 
+FILE *schedulerLog;
 typedef struct process
 {
     int arrivaltime;

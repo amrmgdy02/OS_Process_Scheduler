@@ -4,6 +4,7 @@
 #include <stdio.h>
 #define MEMORY_SIZE 1024
 
+
 PriorityQueue *PQ = NULL;
 Queue *Q = NULL;
 Queue *finishedQueue = NULL;
@@ -32,7 +33,7 @@ int totalWaitingTime = 0;
 float totalWTA = 0;
 int totalRT = 0;
 
-FILE *schedulerLog;
+extern FILE *schedulerLog;
 
 Queue *waitingQueue;
 MemoryBlock *memory_block;
@@ -142,7 +143,7 @@ void SRTNaddprocess()
   {
     if (addProcess(memory_block, newprocess) == false)
     {
-      printf("\nProcess %d Added to waitingQueue\n", newprocess->id);
+      printf("Process %d Added to waitingQueue\n", newprocess->id);
       normalQenqueue(waitingQueue, newprocess);
       return;
     }
@@ -160,6 +161,9 @@ void SRTNaddprocess()
 
         proc_buff.currtime = getClk();
         proc_buff.mtype = runningProcess->realPid;
+
+        // printf("Proc_buff data : currtime = %d -- mtype = %ld\n", proc_buff.currtime, proc_buff.mtype);
+
         msgsnd(proc_msgq_id, &proc_buff, sizeof(proc_buff.currtime), IPC_NOWAIT);
 
         kill(runningProcess->realPid, SIGTSTP);
@@ -229,14 +233,12 @@ void HPFaddprocess()
   {
     if (addProcess(memory_block, newprocess) == false)
     {
-      printf("\nProcess %d Added to waitingQueue\n", newprocess->id);
+      printf("Process %d Added to waitingQueue\n", newprocess->id);
       normalQenqueue(waitingQueue, newprocess);
       return;
     }
-
     HPFenqueue(PQ, newprocess, newprocess->priority);
-
-    if (runningProcess != NULL && newprocess->priority < runningProcess->priority && runningProcess->remainingtime == runningProcess->remainingtime)
+    if (PQpeek(PQ) == newprocess && runningProcess && runningProcess->remainingtime == runningProcess->runningtime) // change lw el running de lesa bad2a wl wesel priority a3la mnha
     {
       kill(newprocess->realPid, SIGCONT);
       kill(runningProcess->realPid, SIGTSTP);
@@ -335,7 +337,7 @@ void finishedPhandler(int signum)
     process *finishedprocess = NULL;
     runningProcess = NULL;
     finishedprocess = PQdequeue(PQ);
-    printf("\nProcess ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
+    printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
     int memFlag = 0;
     updateMemory(memory_block, finishedprocess, &memFlag);
 
@@ -355,7 +357,7 @@ void finishedPhandler(int signum)
   else if (algorithm == 1)
   {
     process *finishedprocess = runningProcess;
-    printf("\nProcess ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
+    printf("Process ID = %d Fininshed at time = %d\n", finishedprocess->id, getClk());
     // Remove the finished process from the queue
     PQremove(PQ, finishedprocess);
     free(finishedprocess);
@@ -426,7 +428,19 @@ void RRScheduler(int quantum)
       runningProcess->remainingtime -= runtime;
       received = 0;
       // Wait till you get a signal from the process that it received your signal
-      while (!received);
+      while (!received){
+         while ((msgrcv(sch_msgq_id, &SCH_message, sizeof(SCH_message.arrivedProcess), getpid(), IPC_NOWAIT)) != -1)
+      {
+        printf("Received\n");
+        process *newprocess = initProcess();
+        if (addProcess(memory_block, newprocess) == false){
+          printf("Process %d Added to waitingQueue\n", newprocess->id);
+          normalQenqueue(waitingQueue, newprocess);
+        }else{
+          normalQenqueue(Q, newprocess);
+          }
+      }
+      };
       
     }
 

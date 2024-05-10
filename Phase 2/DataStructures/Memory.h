@@ -4,6 +4,8 @@
 #pragma once
 #include "../Clock/headers.h"
 
+extern FILE *schedulerLog;
+
 typedef struct MemoryBlock {
     int start;
     int end;
@@ -27,7 +29,6 @@ MemoryBlock* createMemoryBlock(int start, int size, MemoryBlock* myParent) {
     memBlock->left = NULL;
     memBlock->right = NULL;
     memBlock->parent = myParent;
-    //printf("new memory block created - start : %d  end : %d\n", memBlock->start, memBlock->end);
     return memBlock;
 }
 
@@ -44,7 +45,8 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
             temp = temp->parent;
         }
         int currentTime = getClk();
-        printf("\nAt time %d allocated %d bytes for process %d from %d to %d\n",currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
+        fprintf(schedulerLog, "At time %d allocated %d bytes for process %d from %d to %d\n", currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
+        fflush(schedulerLog);
         return true;
     }
     int newSize = memBlock->size / 2;
@@ -57,7 +59,8 @@ bool addProcess(MemoryBlock* memBlock, process* process) {
             temp = temp->parent;
         }
         int currentTime = getClk();
-        printf("\nAt time %d allocated %d bytes for process %d from %d to %d\n",currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
+        fprintf(schedulerLog, "At time %d allocated %d bytes for process %d from %d to %d\n", currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
+        fflush(schedulerLog);
         return true;
     }
     if (memBlock->left == NULL && memBlock->right == NULL) {
@@ -77,8 +80,10 @@ void updateMemory(MemoryBlock* memBlock, process* process, int* flag) {
     if (memBlock->processId == process->id) {
         memBlock->processId = -1;
         memBlock->isEmpty = true;
-        printf("\nAt time %d freed %d bytes from process %d from: %d to %d\n", getClk(), process->memorySize, process->id, memBlock->start, memBlock->end);
         *flag = 1;
+        int currentTime = getClk();
+        fprintf(schedulerLog, "At time %d freed %d bytes from process %d from %d to %d\n", currentTime , process->memorySize, process->id, memBlock->start, memBlock->end);
+        fflush(schedulerLog);
         MemoryBlock* currentBlock = memBlock;
         while (currentBlock->parent != NULL) {
             currentBlock->parent->split -= 1;
