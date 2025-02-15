@@ -1,4 +1,4 @@
-# Operating System Scheduler - May2024
+# Operating System Scheduler
 
 A simulation of a process scheduler using C and IPC techniques. This project implements the Shortest Remaining Time Next (SRTN) and Highest Priority First (HPF) scheduling algorithms and utilizes a buddy system for memory allocation. Inter-Process Communication (IPC) between the scheduler and the processes is achieved using message queues and signals.
 
